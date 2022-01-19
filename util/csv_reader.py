@@ -41,3 +41,4 @@ class CSVReader:
     def generate(self, offset, number):
         number = number if offset + number < len(self.service_profiles) else len(self.service_profiles) - offset
         return self.service_profiles[offset:offset+number]
+
