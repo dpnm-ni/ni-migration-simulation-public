@@ -23,4 +23,6 @@ class Simulation:
 
     # FIXME: current condition only ensures the service provisioning, not all the services' end.
     def is_finished(self):
-        return self.service_broker.destroyed and len(self.mec_net.get_waiting_services()) == 0
+        return self.service_broker.destroyed \
+               and len(self.mec_net.get_waiting_services()) == 0 \
+               and len(self.mec_net.get_unfinished_services()) == 0

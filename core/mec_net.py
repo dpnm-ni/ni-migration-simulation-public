@@ -95,6 +95,7 @@ class MECNetwork:
                 ls.append(service)
         return ls
 
+    # get list of running services
     def get_unfinished_services(self):
         ls = []
         for service in self.services:
