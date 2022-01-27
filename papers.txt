@@ -1,0 +1,18 @@
+0. DeepJS: Job Scheduling Based on Deep Reinforcement Learning in Cloud Data Center
+- https://dl.acm.org/doi/10.1145/3335484.3335513
+- 본 시뮬레이터는 해당 논문에서 오픈소스로 공개한 시뮬레이터 (CloudSimpy, https://github.com/FengcunLi/CloudSimPy) 위에 MEC 네트워크 환경 추가한 것
+
+1. Virtual Machine Migration Strategy Based on Multi-Agent Deep Reinforcement Learning
+- https://www.mdpi.com/2076-3417/11/17/7993
+
+2. Service Migrations in the Cloud for Mobile Accesses: A Reinforcement Learning Approach
+- https://ieeexplore.ieee.org/document/8026876
+
+3. Service migration in mobile edge computing: A deep reinforcement learning approach
+- https://onlinelibrary.wiley.com/doi/full/10.1002/dac.4413
+
+4. Latency and availability driven VNF placement in a MEC-NFV environment
+- https://ieeexplore.ieee.org/document/8647858
+
+5. Dynamic Resource Aware VNF Placement with Deep Reinforcement Learning for 5G Networks
+- https://ieeexplore.ieee.org/document/9322512
