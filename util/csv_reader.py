@@ -5,12 +5,11 @@ from decimal import Decimal, getcontext
 from operator import attrgetter
 from core.service import ServiceProfile
 
-
 getcontext().rounding = decimal.ROUND_DOWN
 
 
 class CSVReader:
-    def __init__(self, filename):
+    def __init__(self, filename, num_machines):
         self.filename = filename
         df = pd.read_csv(self.filename)
 
@@ -22,7 +21,7 @@ class CSVReader:
             # identify user location (edge machine) of the service
             edge_machine_id = row.edge_id.astype(dtype=str)
             if len(edge_machine_id) == 4:
-                edge_machine_id = np.random.randint(0, 13)
+                edge_machine_id = np.random.randint(0, num_machines)
             else:
                 edge_machine_id = int(edge_machine_id[0])
 

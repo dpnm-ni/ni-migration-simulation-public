@@ -1,3 +1,6 @@
+from base_logger import log
+
+
 class Service:
     global_index = -1
 
@@ -43,10 +46,10 @@ class Service:
         yield self.env.timeout(self.duration)
         self.finished = True
         self.finished_timestamp = self.env.now
-        print("[{}] Service {} finished".format(self.finished_timestamp, self.id))
+        log.debug("[{}] Service {} finished".format(self.finished_timestamp, self.id))
 
         self.machine.stop_service_instance(self)
-        print("[{}] Machine state after: {}".format(self.env.now, self.machine.get_state()))
+        log.debug("[{}] Machine state after: {}".format(self.env.now, self.machine.get_state()))
 
     # TODO: refactor the entire codes to be coherent in handling instance properties
     def is_started(self):

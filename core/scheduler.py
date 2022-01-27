@@ -1,3 +1,6 @@
+from base_logger import log
+
+
 class Scheduler:
     def __init__(self, env, deployment_algorithm):
         self.env = env
@@ -21,7 +24,7 @@ class Scheduler:
             # (2) wait 1s when decision failed
             # loop occurs if commented
             yield self.env.timeout(1)
-            print("[{}] Waiting service requests: {}".format(self.env.now, self.mec_net.get_waiting_services()))
+            log.debug("[{}] Waiting service requests: {}".format(self.env.now, self.mec_net.get_waiting_services()))
 
         self.destroyed = True
 
@@ -31,7 +34,7 @@ class Scheduler:
             if machine is None or service is None:
                 break
             else:
-                print("[{}] Service {} from Edge {} started on Machine {}"
-                      .format(self.env.now, service.id, service.edge_machine_id, machine.id))
+                log.debug("[{}] Service {} from Edge {} started on Machine {}".format(
+                    self.env.now, service.id, service.edge_machine_id, machine.id))
                 service.start_service_instance(machine)
-                print("[{}] Machine state after: {}".format(self.env.now, machine.get_state()))
+                log.debug("[{}] Machine state after: {}".format(self.env.now, machine.get_state()))

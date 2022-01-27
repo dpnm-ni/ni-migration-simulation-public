@@ -1,12 +1,14 @@
 import numpy as np
 from decimal import Decimal
 
+
 # machine type: edge or core
 class Machine:
     global_index = -1
 
     def __init__(self, machine_profile):
-        self.id = self.get_machine_id()
+        # self.id = self.get_machine_id()
+        self.id = machine_profile.machine_id
         self.mec_env = None
 
         self.machine_profile = machine_profile
@@ -68,8 +70,13 @@ class Machine:
             # 'finished_task_instances': len(self.finished_task_instances)
         }
 
+    def __repr__(self):
+        return str(self.id)
+
 
 class MachineProfile:
+    global_index = 0
+
     def __init__(self, cpu_capacity, memory_capacity, disk_capacity, cpu=None, memory=None, disk=None):
         self.cpu_capacity = cpu_capacity
         self.memory_capacity = memory_capacity
@@ -78,3 +85,6 @@ class MachineProfile:
         self.cpu = cpu_capacity if cpu is None else cpu
         self.memory = memory_capacity if memory is None else memory
         self.disk = disk_capacity if disk is None else disk
+
+        self.machine_id = MachineProfile.global_index
+        MachineProfile.global_index += 1

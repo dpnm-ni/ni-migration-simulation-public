@@ -1,6 +1,3 @@
-from core.monitor import SLAMonitor
-
-
 class Simulation:
     def __init__(self, env, mec_net, service_broker, scheduler, monitor):
         self.env = env

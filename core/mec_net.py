@@ -5,12 +5,14 @@ import numpy as np
 
 from core.machine import Machine
 
+os.chdir("..")
+
 
 # TODO: implement as singleton
 class MECNetwork:
     def __init__(self):
-        # self.topology_graph, self.topology_json = self.create_topology("graph/Abilene1.gml")
-        self.topology_graph, self.topology_json = self.create_topology("graph/Kreonet1.gml")
+        self.topology_graph, self.topology_json = self.create_topology("graph/Abilene1.gml")
+        # self.topology_graph, self.topology_json = self.create_topology("graph/Kreonet1.gml")
         self.machines = []
         # self.core_machines = []
         # self.edge_machines = []
@@ -18,11 +20,11 @@ class MECNetwork:
 
     def create_topology(self, graph_file):
         G = self.assign_link_weight_by_distance(nx.read_gml(path=graph_file))
-        print(f"nodes: {G.nodes(data=True)}")
+        # print(f"nodes: {G.nodes(data=True)}")
         # print(f"edges: {G.edges(data=True)}")
         # print(dict(nx.all_pairs_dijkstra(G)))
-        print(dict(nx.all_pairs_dijkstra_path(G)))
-        print(dict(nx.all_pairs_dijkstra_path_length(G)))
+        # print(dict(nx.all_pairs_dijkstra_path(G)))
+        # print(dict(nx.all_pairs_dijkstra_path_length(G)))
 
         topology_json = nx.node_link_data(G)
         del topology_json["directed"]
@@ -64,9 +66,10 @@ class MECNetwork:
     def get_path_cost(self, source_id, dest_id):
         source = "server{}".format(source_id)
         dest = "server{}".format(dest_id)
+
         return nx.dijkstra_path_length(self.topology_graph, source, dest)
 
-    def get_least_cost_dest(self, source_id, machine_ids):
+    def get_least_cost_dest_ids(self, source_id, machine_ids):
         source_id = "server{}".format(source_id)
         machine_ids = ["server{}".format(machine_id) for machine_id in machine_ids]
         dict_dest_cost = dict(nx.all_pairs_dijkstra_path_length(self.topology_graph))[source_id]
@@ -74,10 +77,14 @@ class MECNetwork:
         dict_dest_cost = {k: dict_dest_cost[k] for k in machine_ids if k in dict_dest_cost}
         # print(dict_dest_cost)
         # https://gomguard.tistory.com/137
-        least_cost_dest = min(dict_dest_cost.keys(), key=(lambda k: dict_dest_cost[k]))
-        # print(least_cost_dest)
+        least_cost_dest_id = min(dict_dest_cost.keys(), key=(lambda k: dict_dest_cost[k]))
+        # https://stackoverflow.com/a/17352672/5204099
+        least_cost_dest_ids = [int(_id[len("server"):])
+                               for _id in dict_dest_cost.keys()
+                               if dict_dest_cost[_id] == dict_dest_cost[least_cost_dest_id]]
 
-        return int(least_cost_dest[len("server"):])
+        return least_cost_dest_ids
+
 
     def add_machines(self, machine_profiles):
         for machine_profile in machine_profiles:
@@ -93,6 +100,7 @@ class MECNetwork:
         for service in self.services:
             if service.is_started() is False:
                 ls.append(service)
+
         return ls
 
     # get list of running services
@@ -101,6 +109,7 @@ class MECNetwork:
         for service in self.services:
             if service.is_started() is True and service.is_finished() is False:
                 ls.append(service)
+
         return ls
 
 
@@ -110,5 +119,5 @@ def test():
 
 
 if __name__ == '__main__':
-    os.chdir("..")
+    # os.chdir("..")
     test()

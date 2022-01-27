@@ -1,3 +1,4 @@
+from base_logger import log
 from core.service import Service
 
 
@@ -25,7 +26,7 @@ class Broker:
 
             service = Service(self.env, service_profile)
             service.queued_timestamp = self.env.now
-            print("[{}][{}] a request for Service {} arrived".format(self.__class__.__name__, service.queued_timestamp, service.id))
+            log.debug("[{}] a request for Service {} arrived".format(service.queued_timestamp, service.id))
             self.mec_net.add_service(service)
 
         self.destroyed = True
