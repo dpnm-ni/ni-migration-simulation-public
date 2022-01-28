@@ -46,36 +46,28 @@ class LeastCostAlgorithm(Algorithm):
         waiting_services = mec_net.get_waiting_services()
         machines = mec_net.machines
         for service in waiting_services:
-            # if edge machine is not in the current machine list (e.g. different #machine topo assumes), find alternate machine
-            # if service.edge_machine_id in [machine.id for machine in machines]:
-            #     if machines[service.edge_machine_id].can_accommodate(service.service_profile):
-            #         edge_machine = machines[service.edge_machine_id]
-            #         return edge_machine, service
-            #     else:
-            #         candidate_machine_ids = [machine.id for machine in machines if machine.id != service.edge_machine_id]
-            #         least_cost_machine_id = mec_net.get_least_cost_dest(service.edge_machine_id, candidate_machine_ids)
-            #         if machines[least_cost_machine_id].can_accommodate(service.service_profile):
-            #             log.debug("[{}] Service {} from Edge {} cannot run on its edge machine. go to Machine {}".format(
-            #                 clock, service.id, service.edge_machine_id, machines[least_cost_machine_id].id))
-            #             return machines[least_cost_machine_id], service
             try:
-                if machines[service.edge_machine_id].can_accommodate(service.service_profile):
+                available = machines[service.edge_machine_id].can_accommodate(service.service_profile)
+                if available == 0:
+                    raise Exception
+                else:
                     edge_machine = machines[service.edge_machine_id]
                     return edge_machine, service
-            except IndexError:
+            except (IndexError, Exception):
                 candidate_machine_ids = [machine.id for machine in machines if machine.id != service.edge_machine_id]
-                # least_cost_machine_id = mec_net.get_least_cost_dest(service.edge_machine_id, candidate_machine_ids)
-                # if machines[least_cost_machine_id].can_accommodate(service.service_profile):
-                #     log.debug("[{}] Service {} from Edge {} cannot run on its edge machine. go to Machine {}".format(
-                #         clock, service.id, service.edge_machine_id, machines[least_cost_machine_id].id))
-                #     return machines[least_cost_machine_id], service
-                least_cost_machine_ids = mec_net.get_least_cost_dest_ids(service.edge_machine_id, candidate_machine_ids)
-                for _id in least_cost_machine_ids:
-                    if machines[_id].can_accommodate(service.service_profile):
-                        alternative_machine = machines[_id]
-                        log.debug(
-                            "[{}] Service {} from Edge {} cannot run on its edge machine. go to Machine {}".format(
-                                clock, service.id, service.edge_machine_id, alternative_machine.id))
-                        return alternative_machine, service
+                while True:
+                    least_cost_machine_ids = mec_net.get_least_cost_dest_ids(service.edge_machine_id, candidate_machine_ids)
+                    if least_cost_machine_ids is None:
+                        break
+                    for _id in least_cost_machine_ids:
+                        if machines[_id].can_accommodate(service.service_profile):
+                            alternative_machine = machines[_id]
+                            log.debug(
+                                "[{}] Service {} from Edge {} cannot run on its edge machine. go to Machine {}".format(
+                                    clock, service.id, service.edge_machine_id, alternative_machine.id))
+                            return alternative_machine, service
+
+                        # exclude the not available machine
+                        candidate_machine_ids.remove(_id)
 
         return None, None

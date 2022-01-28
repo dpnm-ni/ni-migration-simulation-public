@@ -9,7 +9,7 @@ class Machine:
     def __init__(self, machine_profile):
         # self.id = self.get_machine_id()
         self.id = machine_profile.machine_id
-        self.mec_env = None
+        self.mec_net = None
 
         self.machine_profile = machine_profile
         self.cpu_capacity = self.machine_profile.cpu_capacity
@@ -27,8 +27,8 @@ class Machine:
         cls.global_index += 1
         return cls.global_index
 
-    def attach(self, mec_env):
-        self.mec_env = mec_env
+    def attach(self, mec_net):
+        self.mec_net = mec_net
 
     # Migrating instanceA from server1 to server2 is simulated by:
     # if server2.can_accommodate(instanceA)

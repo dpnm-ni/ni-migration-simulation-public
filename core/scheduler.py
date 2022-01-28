@@ -9,8 +9,7 @@ class Scheduler:
         self.simulation = None
         self.mec_net = None
         self.destroyed = False
-        # FIXME: used?
-        self.valid_pairs = {}
+        self.valid_pairs = []
 
     def attach(self, simulation):
         self.simulation = simulation
@@ -24,12 +23,12 @@ class Scheduler:
             # (2) wait 1s when decision failed
             # loop occurs if commented
             yield self.env.timeout(1)
-            log.debug("[{}] Waiting service requests: {}".format(self.env.now, self.mec_net.get_waiting_services()))
 
         self.destroyed = True
 
     def make_decision(self):
         while True:
+            log.debug("[{}] Pending service requests: {}".format(self.env.now, self.mec_net.get_waiting_services()))
             machine, service = self.deployment_algorithm(self.mec_net, self.env.now)
             if machine is None or service is None:
                 break
@@ -38,3 +37,4 @@ class Scheduler:
                     self.env.now, service.id, service.edge_machine_id, machine.id))
                 service.start_service_instance(machine)
                 log.debug("[{}] Machine state after: {}".format(self.env.now, machine.get_state()))
+                self.valid_pairs.append((machine.id, service.id))

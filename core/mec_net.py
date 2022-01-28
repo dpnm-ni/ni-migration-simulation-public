@@ -77,18 +77,20 @@ class MECNetwork:
         dict_dest_cost = {k: dict_dest_cost[k] for k in machine_ids if k in dict_dest_cost}
         # print(dict_dest_cost)
         # https://gomguard.tistory.com/137
-        least_cost_dest_id = min(dict_dest_cost.keys(), key=(lambda k: dict_dest_cost[k]))
-        # https://stackoverflow.com/a/17352672/5204099
-        least_cost_dest_ids = [int(_id[len("server"):])
-                               for _id in dict_dest_cost.keys()
-                               if dict_dest_cost[_id] == dict_dest_cost[least_cost_dest_id]]
-
-        return least_cost_dest_ids
-
+        try:
+            least_cost_dest_id = min(dict_dest_cost.keys(), key=(lambda k: dict_dest_cost[k]))
+            # https://stackoverflow.com/a/17352672/5204099
+            least_cost_dest_ids = [int(_id[len("server"):])
+                                   for _id in dict_dest_cost.keys()
+                                   if dict_dest_cost[_id] == dict_dest_cost[least_cost_dest_id]]
+            return least_cost_dest_ids
+        except ValueError:
+            return None
 
     def add_machines(self, machine_profiles):
         for machine_profile in machine_profiles:
             machine = Machine(machine_profile)
+            machine.attach(self)
             self.machines.append(machine)
 
     # register a service request

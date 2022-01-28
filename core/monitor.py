@@ -7,6 +7,7 @@ class SLAMonitor:
         self.simulation = None
         self.mec_net = None
         self.accum_path_cost = 0
+
         self.cur_path_costs = []
         self.cur_path_cost = 0
 
@@ -15,8 +16,8 @@ class SLAMonitor:
         self.mec_net = simulation.mec_net
 
     def run(self):
-        yield self.env.timeout(5)
-        # yield self.env.timeout(1)
+        # yield self.env.timeout(5)
+        yield self.env.timeout(1)
 
         while not self.simulation.is_finished():
         # while len(self.mec_net.get_unfinished_services()) > 0:
@@ -34,5 +35,5 @@ class SLAMonitor:
                 log.debug("[{}] current average path cost is {}".format(self.env.now, self.cur_path_cost))
 
             # monitor performance of each service request/instance every 5s
-            yield self.env.timeout(5)
-            # yield self.env.timeout(1)
+            # yield self.env.timeout(5)
+            yield self.env.timeout(1)

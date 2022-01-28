@@ -55,7 +55,11 @@ class LeastAccumPathCostRewardGiver(RewardGiver):
     def get_reward(self):
         super().get_reward()
         accum_path_cost = self.simulation.monitor.accum_path_cost
-        return -accum_path_cost
+        # return -accum_path_cost
+        if accum_path_cost == 0:
+            return 0
+        else:
+            return 100 * (1 / int(accum_path_cost))
 
 
 class LeastCurrentPathCostRewardGiver(RewardGiver):
@@ -64,4 +68,4 @@ class LeastCurrentPathCostRewardGiver(RewardGiver):
     def get_reward(self):
         super().get_reward()
         cur_path_cost = self.simulation.monitor.cur_path_cost
-        return -cur_path_cost
+        return 1 / int(cur_path_cost)

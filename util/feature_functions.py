@@ -12,7 +12,7 @@ def features_extract_func(service):
 
 # FIXME: constants only calculated about requests_1_3000.csv
 def features_normalize_func(x):
-    # x: [m.cpu, m.mem, m.disk, s.cpu, s.mem, s.disk, s.dur]
+    # x: list of [m.cpu, m.mem, m.disk, s.cpu, s.mem, s.disk, s.dur, m-s path cost]
     # min-max ver. (X-MIN)/(MAX-MIN)
     y = (np.array(x).astype(float) - np.array([0, 0, 0, 1, 0.002651, 0.000142, 1])) / np.array([64, 1, 1, 15, 0.997349, 0.113475, 3627.828])
     # z-score ver. (X-MEAN)/STD
