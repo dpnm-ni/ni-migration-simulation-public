@@ -1,3 +1,5 @@
+import simpy
+
 from base_logger import log
 
 
@@ -15,11 +17,10 @@ class Service:
         self.memory = self.service_profile.memory
         self.disk = self.service_profile.disk
         self.duration = self.service_profile.duration
-
         self.edge_machine_id = self.service_profile.edge_machine_id
+
         # machine where the instance of this service is actually deployed (by the deployment algorithm configured)
         self.machine = None
-        # FIXME: is this used?
         self.work_event = None
 
         self.started = False
@@ -43,13 +44,26 @@ class Service:
         self.work_event = self.env.process(self.do_work())
 
     def do_work(self):
-        yield self.env.timeout(self.duration)
-        self.finished = True
-        self.finished_timestamp = self.env.now
-        log.debug("[{}] Service {} finished".format(self.finished_timestamp, self.id))
+        try:
+            yield self.env.timeout(self.duration)
+            self.finished = True
+            self.finished_timestamp = self.env.now
+            log.debug("[{}] Service {} finished".format(self.finished_timestamp, self.id))
 
-        self.machine.stop_service_instance(self)
-        log.debug("[{}] Machine state after: {}".format(self.env.now, self.machine.get_state()))
+            self.machine.stop_service_instance(self)
+            log.debug("[{}] Machine state after: {}".format(self.env.now, self.machine.get_state()))
+
+        # !서비스 중단 상황 (서버 fault 등). triggered by FaultInjector
+        except simpy.Interrupt:
+            # !다시 waiting 큐로 들어가서 스케쥴링되어 남은 duration 처리될 수 있도록 설정 (broker.py 참고)
+            self.duration = self.duration - (self.env.now - self.started_timestamp)
+            self.machine = None
+            #self.submit_time = ?
+            self.started = False
+            self.started_timestamp = None
+            self.queued_timestamp = self.env.now
+
+            log.debug("[{}] Service {} interrupted. go back to waiting queue".format(self.env.now, self.id))
 
     # TODO: refactor the entire codes to be coherent in handling instance properties
     def is_started(self):

@@ -4,9 +4,10 @@ from core.scheduler import Scheduler
 from core.broker import Broker
 from core.simulation import Simulation
 from core.monitor import SLAMonitor
+from reinforce.injector import FaultInjector
 
 
-class Episode(object):
+class Episode:
     def __init__(self, machine_profiles, service_profiles, deployment_algorithm):
         self.env = simpy.Environment()
         # self.env = simpy.RealtimeEnvironment()
@@ -16,8 +17,9 @@ class Episode(object):
         service_broker = Broker(self.env, service_profiles)
         scheduler = Scheduler(self.env, deployment_algorithm)
         monitor = SLAMonitor(self.env)
+        injector = FaultInjector(self.env)
 
-        self.simulation = Simulation(self.env, mec_net, service_broker, scheduler, monitor)
+        self.simulation = Simulation(self.env, mec_net, service_broker, scheduler, monitor, injector)
 
     def run(self):
         # run our simulation environment

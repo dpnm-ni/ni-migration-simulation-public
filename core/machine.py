@@ -19,8 +19,12 @@ class Machine:
         self.memory = self.machine_profile.memory
         self.disk = self.machine_profile.disk
 
-        # FIXME: is this used?
-        self.service_instances = []
+        # periodically filled by Monitor
+        self.mon_disk_utilization = 0
+        self.mon_disk_overutil_cnt = 0
+
+        self.running_service_instances = []
+        self.destroyed = False
 
     @classmethod
     def get_machine_id(cls):
@@ -42,20 +46,42 @@ class Machine:
         self.disk -= service.disk
         assert self.disk >= 0
 
-        self.service_instances.append(service)
+        self.running_service_instances.append(service)
 
     def stop_service_instance(self, service):
         self.cpu += service.cpu
-        assert self.cpu <= self.cpu_capacity, "service {} stopped at machine {}".format(service.id, self.get_state())
+        # assert self.cpu <= self.cpu_capacity, "service {} stopped at machine {}".format(service.id, self.get_state())
         self.memory += service.memory
-        assert self.memory <= self.memory_capacity
+        # assert self.memory <= self.memory_capacity
         self.disk += service.disk
-        assert self.disk <= self.disk_capacity
+        # assert self.disk <= self.disk_capacity
+
+        self.running_service_instances.remove(service)
 
     def can_accommodate(self, service_profile):
+        if self.destroyed is True:
+            return False
+
         return self.cpu >= service_profile.cpu and \
                self.memory >= service_profile.memory and \
                self.disk >= service_profile.disk
+
+    def destroy(self):
+        services = self.running_service_instances
+        for service in services:
+            # https://simpy.readthedocs.io/en/latest/simpy_intro/process_interaction.html#interrupting-another-process
+            # self.env.interrupt(service)
+            service.work_event.interrupt()
+            # self.running_service_instances.remove(service)
+            self.stop_service_instance(service)
+            self.mec_net.interrupted_services.append(service)
+
+        # !중요: class 간 dependency 때문에(path cost 연산 등) 해당 머신을 topology 자체에서 지우지는 말고 스케쥴링만 배제되도록 설정
+        # self.mec_net.machines.remove(self)
+        # self.cpu_capacity = 0
+        # self.memory_capacity = 0
+        # self.disk_capacity = 0
+        self.destroyed = True
 
     def get_state(self):
         return {

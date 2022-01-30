@@ -5,7 +5,7 @@ from core.algorithm import RandomAlgorithm, FirstFitAlgorithm, LeastCostAlgorith
 from core.machine import MachineProfile
 from core.episode import Episode
 from util.csv_reader import CSVReader
-from util.tools import average_completion_time, average_slowdown
+from util.tools import average_completion_time, average_residence_cost, average_queuing_delay
 from util.feature_functions import *
 from reinforce.agent import REINFORCEAgent
 from reinforce.algorithm import REINFORCEAlgorithm
@@ -19,7 +19,7 @@ NUM_MACHINES = 11
 # SERVICE_FILE = "csv/test_least_cost.csv"
 SERVICE_FILE = "csv/requests_1_3000.csv"
 SERVICE_FILE_OFFSET = 0
-SERVICE_FILE_LENGTH = 1000
+SERVICE_FILE_LENGTH = 2000
 
 # RL framework config
 NUM_ITERATIONS = 100
@@ -34,32 +34,45 @@ def main():
     service_profiles = CSVReader(SERVICE_FILE, NUM_MACHINES).generate(SERVICE_FILE_OFFSET, SERVICE_FILE_LENGTH)
 
     # 각 서비스 요청의 엣지 위치와 관계없이 수용가능한 머신들 리스트로 뽑아서 그 중에서 랜덤 선택
-    # Random (can be worst)
+    # 비현실적이지만 FirstFit 보다 로드밸런싱 측면에서 나을 수 있음
+    # Random
     tic = time.time()
     deployment_algorithm = RandomAlgorithm()
     episode = Episode(machine_profiles, service_profiles, deployment_algorithm)
     episode.run()
     log.info(
-        "\nmakespan: {} \ncomputation time: {} "
-        "\naverage time to complete a service: {} \naverage slowdown?: {} "
-        "\naccumulated path cost: {} \naverage path cost: {}".format(
-            episode.env.now, time.time() - tic, average_completion_time(episode), average_slowdown(episode),
-            episode.simulation.monitor.accum_path_cost, np.mean(episode.simulation.monitor.cur_path_costs)))
+        "makespan: {makespan}\n"
+        "computation time: {comp_time}\n"
+        "avg. completion time: {avg_comp}\n"
+        "avg. residence time ratio : {avg_resid}\n"
+        "avg. queuing delay: {avg_queue}\n"
+        "accum. path cost: {accum_path}\n"
+        "avg. path cost: {avg_path}".format(
+            makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
+            avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
+            accum_path=episode.simulation.monitor.accum_path_cost,
+            avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
     log.debug("selected (m, s) pairs: {}".format(episode.simulation.scheduler.valid_pairs))
 
     # 각 서비스 요청의 엣지 위치와 관계없이 수용가능한 머신들 리스트로 뽑아서 그 중에서 첫번째 pair (서비스, 머신) 선택
-    # => 환경 설정에 따라 random 보다 평균 latency (path cost) 높거나 낮음
+    # => 계산 시간은 빠르지만 로드밸런싱이 되지 않아 hot spot 발생으로 인한 성능 저하 가능
     # FirstFit (baseline)
     tic = time.time()
     deployment_algorithm = FirstFitAlgorithm()
     episode = Episode(machine_profiles, service_profiles, deployment_algorithm)
     episode.run()
     log.info(
-        "\nmakespan: {} \ncomputation time: {} "
-        "\naverage time to complete a service: {} \naverage slowdown?: {} "
-        "\naccumulated path cost: {} \naverage path cost: {}".format(
-            episode.env.now, time.time() - tic, average_completion_time(episode), average_slowdown(episode),
-            episode.simulation.monitor.accum_path_cost, np.mean(episode.simulation.monitor.cur_path_costs)))
+        "makespan: {makespan}\n"
+        "computation time: {comp_time}\n"
+        "avg. completion time: {avg_comp}\n"
+        "avg. residence time ratio : {avg_resid}\n"
+        "avg. queuing delay: {avg_queue}\n"
+        "accum. path cost: {accum_path}\n"
+        "avg. path cost: {avg_path}".format(
+            makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
+            avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
+            accum_path=episode.simulation.monitor.accum_path_cost,
+            avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
     log.debug("selected (m, s) pairs: {}".format(episode.simulation.scheduler.valid_pairs))
 
     # 각 서비스 요청의 엣지 머신에 우선 배치 (이 경우 path cost 즉 end latency = 0)
@@ -72,75 +85,81 @@ def main():
     episode = Episode(machine_profiles, service_profiles, deployment_algorithm)
     episode.run()
     log.info(
-        "\nmakespan: {} \ncomputation time: {} "
-        "\naverage time to complete a service: {} \naverage slowdown?: {} "
-        "\naccumulated path cost: {} \naverage path cost: {}".format(
-            episode.env.now, time.time() - tic, average_completion_time(episode), average_slowdown(episode),
-            episode.simulation.monitor.accum_path_cost, np.mean(episode.simulation.monitor.cur_path_costs)))
+        "makespan: {makespan}\n"
+        "computation time: {comp_time}\n"
+        "avg. completion time: {avg_comp}\n"
+        "avg. residence time ratio : {avg_resid}\n"
+        "avg. queuing delay: {avg_queue}\n"
+        "accum. path cost: {accum_path}\n"
+        "avg. path cost: {avg_path}".format(
+            makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
+            avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
+            accum_path=episode.simulation.monitor.accum_path_cost,
+            avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
     log.debug("selected (m, s) pairs: {}".format(episode.simulation.scheduler.valid_pairs))
 
 
 
-    # REINFORCE 알고리즘으로 일단 서비스 latency (path cost)만 리워드로 받아 최적 배치 학습
-    # 1. DRL-based deployment hoping to be close to the performance of LeastCost
-    agent = REINFORCEAgent(DIM_NN_INPUT)
-    # reward_giver = LeastCurrentPathCostRewardGiver()
-    reward_giver = LeastAccumPathCostRewardGiver()
-    for itr in range(NUM_ITERATIONS):
-        log.debug("\n********** Iteration{} ************".format(itr))
-
-        # trajectories = list([])
-        makespans = list([])
-        computation_times = list([])
-        average_completions = list([])
-        average_slowdowns = list([])
-        accum_path_costs = list([])
-        cur_path_costs = list([])
-        # for debug purpose
-        last_episode = None
-        for epi in range(NUM_EPISODES):
-            log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
-            # initialize everything needed for next episode run
-            # s = env.reset()
-
-            tic = time.time()
-            algorithm = REINFORCEAlgorithm(agent, reward_giver,
-                                    features_extract_func=features_extract_func,
-                                    features_normalize_func=features_normalize_func)
-            episode = Episode(machine_profiles, service_profiles, algorithm)
-            algorithm.reward_giver.attach(episode.simulation)
-            episode.run()
-
-            # episode ends
-            # trajectories.append(episode.simulation.scheduler.deployment_algorithm.current_trajectory)
-            makespans.append(episode.simulation.env.now)
-            computation_times.append(time.time() - tic)
-            average_completions.append(average_completion_time(episode))
-            average_slowdowns.append(average_slowdown(episode))
-            accum_path_costs.append(episode.simulation.monitor.accum_path_cost)
-            # FIXME:
-            cur_path_costs.append(np.mean(episode.simulation.monitor.cur_path_costs))
-            last_episode = episode
-
-            observations_epi = []
-            actions_epi = []
-            rewards_epi = []
-            trajectory_epi = episode.simulation.scheduler.deployment_algorithm.current_trajectory
-            for transition in trajectory_epi:
-                observations_epi.append(transition.observation)
-                actions_epi.append(transition.action)
-                rewards_epi.append(transition.reward)
-
-            agent.train_net(observations_epi, actions_epi, rewards_epi, episode)
-            episode.simulation.scheduler.deployment_algorithm.current_trajectory = []
-
-        # print("\nselected (m, s) pairs: {}".format(last_episode.simulation.scheduler.valid_pairs))
-        print(np.mean(makespans), np.mean(computation_times),
-              np.mean(average_completions), np.mean(average_slowdowns),
-              np.mean(accum_path_costs), np.mean(cur_path_costs))
-        print(np.std(makespans), np.std(computation_times),
-              np.std(average_completions), np.std(average_slowdowns),
-              np.std(accum_path_costs), np.std(cur_path_costs))
+    # # REINFORCE 알고리즘으로 일단 서비스 latency (path cost)만 리워드로 받아 최적 배치 학습
+    # # 1. DRL-based deployment hoping to be close to the performance of LeastCost
+    # agent = REINFORCEAgent(DIM_NN_INPUT)
+    # # reward_giver = LeastCurrentPathCostRewardGiver()
+    # reward_giver = LeastAccumPathCostRewardGiver()
+    # for itr in range(NUM_ITERATIONS):
+    #     log.debug("\n********** Iteration{} ************".format(itr))
+    #
+    #     # trajectories = list([])
+    #     makespans = list([])
+    #     computation_times = list([])
+    #     average_completions = list([])
+    #     average_slowdowns = list([])
+    #     accum_path_costs = list([])
+    #     avg_path_costs = list([])
+    #     # for debug purpose
+    #     last_episode = None
+    #     for epi in range(NUM_EPISODES):
+    #         log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
+    #         # initialize everything needed for next episode run
+    #         # s = env.reset()
+    #
+    #         tic = time.time()
+    #         algorithm = REINFORCEAlgorithm(agent, reward_giver,
+    #                                 features_extract_func=features_extract_func,
+    #                                 features_normalize_func=features_normalize_func)
+    #         episode = Episode(machine_profiles, service_profiles, algorithm)
+    #         algorithm.reward_giver.attach(episode.simulation)
+    #         episode.run()
+    #
+    #         # episode ends
+    #         # trajectories.append(episode.simulation.scheduler.deployment_algorithm.current_trajectory)
+    #         makespans.append(episode.simulation.env.now)
+    #         computation_times.append(time.time() - tic)
+    #         average_completions.append(average_completion_time(episode))
+    #         average_slowdowns.append(average_slowdown(episode))
+    #         accum_path_costs.append(episode.simulation.monitor.accum_path_cost)
+    #         # FIXME:
+    #         avg_path_costs.append(np.mean(episode.simulation.monitor.hist_path_costs))
+    #         last_episode = episode
+    #
+    #         observations_epi = []
+    #         actions_epi = []
+    #         rewards_epi = []
+    #         trajectory_epi = episode.simulation.scheduler.deployment_algorithm.current_trajectory
+    #         for transition in trajectory_epi:
+    #             observations_epi.append(transition.observation)
+    #             actions_epi.append(transition.action)
+    #             rewards_epi.append(transition.reward)
+    #
+    #         agent.train_net(observations_epi, actions_epi, rewards_epi, episode)
+    #         episode.simulation.scheduler.deployment_algorithm.current_trajectory = []
+    #
+    #     # print("\nselected (m, s) pairs: {}".format(last_episode.simulation.scheduler.valid_pairs))
+    #     print(np.mean(makespans), np.mean(computation_times),
+    #           np.mean(average_completions), np.mean(average_slowdowns),
+    #           np.mean(accum_path_costs), np.mean(avg_path_costs))
+    #     print(np.std(makespans), np.std(computation_times),
+    #           np.std(average_completions), np.std(average_slowdowns),
+    #           np.std(accum_path_costs), np.std(avg_path_costs))
 
 
 if __name__ == '__main__':

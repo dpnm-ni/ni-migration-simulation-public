@@ -14,9 +14,9 @@ class MECNetwork:
         self.topology_graph, self.topology_json = self.create_topology("graph/Abilene1.gml")
         # self.topology_graph, self.topology_json = self.create_topology("graph/Kreonet1.gml")
         self.machines = []
-        # self.core_machines = []
-        # self.edge_machines = []
         self.services = []
+        # for debug purpose
+        self.interrupted_services = []
 
     def create_topology(self, graph_file):
         G = self.assign_link_weight_by_distance(nx.read_gml(path=graph_file))
@@ -93,7 +93,7 @@ class MECNetwork:
             machine.attach(self)
             self.machines.append(machine)
 
-    # register a service request
+    # register a service request by broker
     def add_service(self, service):
         self.services.append(service)
 
