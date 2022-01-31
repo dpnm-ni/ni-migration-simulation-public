@@ -13,7 +13,6 @@ def average_residence_cost(episode):
     residence_ratio = 0
     services = episode.simulation.mec_net.services
     for service in services:
-        # FIXME: interruption delay is ignored
         residence_ratio += (service.finished_timestamp - service.submit_time) / service.duration
     return residence_ratio / len(services)
 

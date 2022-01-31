@@ -1,9 +1,11 @@
 import numpy as np
 import torch
-from sklearn.preprocessing import MinMaxScaler
+import math
 from torch.distributions import Categorical
+from reinforce.injector import DISK_FAULT_THRESHOLD
 
 # ! 학습 feature 중 machine-service 간 path cost에 임의로 가중치 부여 (학습 잘되도록)
+# FIXME: 이런식으로 feature에 임의의 weight 주는 것 보다는 뉴럴넷 input을 정규화하고 리워드 계산 부분을 구체화하는게 확장성 더 좋을듯?
 PATH_COST_WEIGHT = 10
 
 
@@ -39,7 +41,9 @@ class REINFORCEAlgorithm:
         for machine, service in valid_pairs:
             # !convert a valid pair to [machine.profile + service.profile + path cost] as a feature vector
             path_cost = [PATH_COST_WEIGHT * machine.mec_net.get_path_cost(service.edge_machine_id, machine.id)]
+            disk_overutil = [machine.mon_disk_overutil_cnt]
             feature_vector = self.extract_machine_features(machine) + self.extract_service_features(service) + path_cost
+            # feature_vector = self.extract_machine_features(machine) + self.extract_service_features(service) + path_cost + disk_overutil
             feature_vectors.append(feature_vector)
 
         return feature_vectors
@@ -79,14 +83,32 @@ class REINFORCEAlgorithm:
             # !엄밀하게는 해당 서비스의 duration까지 고려해서 계산해야됨 (accumulated path cost for this service deployment)
             # !일단은 테스팅 목적으로 단순하게 계산함 (duration 보장 안되는 고장 상황에서는 이게 나을수도?)
             path_cost = feature_vectors[pair_index][-1] / PATH_COST_WEIGHT
-            reward = 1
-            if path_cost != 0:
-                reward = 1 / path_cost
+            # path_cost = feature_vectors[pair_index][-2] / PATH_COST_WEIGHT
+            # reward_path_cost = 1
+            # if path_cost != 0:
+            #     reward_path_cost = 1 / path_cost
+            normalized_path_cost = (path_cost - 0) / (mec_net.max_path_cost - 0)
+            reward_path_cost = np.log(1 - normalized_path_cost)
+            # reward_path_cost = -np.exp(path_cost)
+
+            # disk_overutil = feature_vectors[pair_index][-1]
+            # reward_disk_overutil = 0
+            # if disk_overutil in range(1, 6):
+            #     reward_disk_overutil = 0.01 * disk_overutil
+            # elif disk_overutil in range(6, DISK_FAULT_THRESHOLD - 1):
+            #     reward_disk_overutil = 0.05 * disk_overutil
+            # elif disk_overutil == DISK_FAULT_THRESHOLD - 1:
+            #     reward_disk_overutil = 1
+            # elif disk_overutil >= DISK_FAULT_THRESHOLD:
+            #     reward_disk_overutil = 100
+
+            # REWARD = reward_path_cost - reward_disk_overutil
+            REWARD = reward_path_cost
 
             # !Transition(s, a, r)
             # !s: valid (m, s) pairs (each pair translated to [m.profile, s.profile, path_cost]) at this scheduling tick
             # !a: probability of selecting the (m, s) pair (fitness value of the (m, s) pair)
-            transition = Transition(state, fitness_values[pair_index], reward, clock)
+            transition = Transition(state, fitness_values[pair_index], REWARD, clock)
             self.current_trajectory.append(transition)
             self.selected_pairs.append(valid_machine_service_pairs[pair_index])
 

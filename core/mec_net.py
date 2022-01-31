@@ -11,12 +11,14 @@ os.chdir("..")
 # TODO: implement as singleton
 class MECNetwork:
     def __init__(self):
-        self.topology_graph, self.topology_json = self.create_topology("graph/Abilene1.gml")
-        # self.topology_graph, self.topology_json = self.create_topology("graph/Kreonet1.gml")
         self.machines = []
         self.services = []
+        self.max_path_cost = 0
         # for debug purpose
         self.interrupted_services = []
+
+        self.topology_graph, self.topology_json = self.create_topology("graph/Abilene1.gml")
+        # self.topology_graph, self.topology_json = self.create_topology("graph/Kreonet1.gml")
 
     def create_topology(self, graph_file):
         G = self.assign_link_weight_by_distance(nx.read_gml(path=graph_file))
@@ -25,6 +27,16 @@ class MECNetwork:
         # print(dict(nx.all_pairs_dijkstra(G)))
         # print(dict(nx.all_pairs_dijkstra_path(G)))
         # print(dict(nx.all_pairs_dijkstra_path_length(G)))
+
+        # FIXME: get the maximum of "shortest" path costs between all nodes
+        dict_dest_cost = dict(nx.all_pairs_dijkstra_path_length(G))
+        max_path_cost = 0
+        for key in dict_dest_cost.keys():
+            path_cost = max(dict_dest_cost[key].values())
+            if path_cost > max_path_cost:
+                max_path_cost = path_cost
+        # print(max_path_cost)
+        self.max_path_cost = max_path_cost
 
         topology_json = nx.node_link_data(G)
         del topology_json["directed"]
