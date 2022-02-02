@@ -17,15 +17,20 @@ NUM_MACHINES = 11
 
 # request file config
 # SERVICE_FILE = "csv/test_least_cost.csv"
+
+# FIXME: 테스트 케이스 실행 따로 분리할 것
+# disk_overutil test. make sure reinforce.injector.DISK_FAULT_THRESHOLD = 3
+# SERVICE_FILE = "csv/test_disk_overutil.csv"
+
 SERVICE_FILE = "csv/requests_1_3000.csv"
 SERVICE_FILE_OFFSET = 0
-SERVICE_FILE_LENGTH = 1000
+SERVICE_FILE_LENGTH = 2000
 
 # RL framework config
 NUM_ITERATIONS = 100
 NUM_EPISODES = 10
 # NUM_ROLLOUT = 100
-DIM_NN_INPUT = 8
+DIM_NN_INPUT = 9
 
 
 # 시뮬레이터 동작 로그 없이 각 알고리즘의 결과만 출력하려면 base_logger의 로그 레벨 INFO로 바꿀 것
@@ -157,9 +162,10 @@ def main():
             episode.simulation.scheduler.deployment_algorithm.current_trajectory = []
 
         # print("\nselected (m, s) pairs: {}".format(last_episode.simulation.scheduler.valid_pairs))
-        print(np.mean(makespans), np.mean(computation_times),
-              np.mean(avg_completion_times), np.mean(avg_residence_times), np.mean(avg_queuing_delays),
-              np.mean(accum_path_costs), np.mean(avg_path_costs))
+        with open("result.txt", 'a') as f:
+            print(np.mean(makespans), np.mean(computation_times),
+                  np.mean(avg_completion_times), np.mean(avg_residence_times), np.mean(avg_queuing_delays),
+                  np.mean(accum_path_costs), np.mean(avg_path_costs), file=f)
         # print(np.std(makespans), np.std(computation_times),
         #       np.std(average_completions), np.std(average_slowdowns),
         #       np.std(accum_path_costs), np.std(avg_path_costs))

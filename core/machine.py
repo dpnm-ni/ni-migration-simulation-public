@@ -72,8 +72,8 @@ class Machine:
             # https://simpy.readthedocs.io/en/latest/simpy_intro/process_interaction.html#interrupting-another-process
             # self.env.interrupt(service)
             service.work_event.interrupt()
-            # self.running_service_instances.remove(service)
-            self.stop_service_instance(service)
+            # FIXME: for문 iterable(services)에 대한 remove 연산 때문에 일부 서비스가 interrupt 되지 않음. 유사한 코드 전체적으로 확인 필요
+            # self.stop_service_instance(service)
             self.mec_net.interrupted_services.append(service)
 
         # !중요: class 간 dependency 때문에(path cost 연산 등) 해당 머신을 topology 자체에서 지우지는 말고 스케쥴링만 배제되도록 설정

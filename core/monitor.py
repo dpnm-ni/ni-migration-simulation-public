@@ -39,7 +39,7 @@ class SLAMonitor:
 
             machines = self.mec_net.machines
             for machine in machines:
-                if machine.disk_capacity == 0:
+                if machine.destroyed is True:
                     continue
                 # FIXME:
                 # disk_utilization = (machine.disk_capacity - machine.disk) / machine.disk_capacity
