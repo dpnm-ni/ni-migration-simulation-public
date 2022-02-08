@@ -8,8 +8,8 @@ from reinforce.injector import DISK_FAULT_THRESHOLD
 # FIXME: 이런식으로 feature에 임의의 weight 주는 것 보다는 뉴럴넷 input을 정규화하고 리워드 계산 부분을 구체화하는게 확장성 더 좋을듯?
 PATH_COST_WEIGHT = 10
 
-W1 = 0.7
-W2 = 0.3
+W1 = 0.5
+W2 = 0.5
 
 
 class Transition:
@@ -87,14 +87,16 @@ class REINFORCEAlgorithm:
             # !일단은 테스팅 목적으로 단순하게 계산함 (duration 보장 안되는 고장 상황에서는 이게 나을수도?)
             # path_cost = feature_vectors[pair_index][-1] / PATH_COST_WEIGHT
             path_cost = feature_vectors[pair_index][-2] / PATH_COST_WEIGHT
-            normalized_path_cost = (path_cost - 0) / (mec_net.max_path_cost - 0)
-            reward_path_cost = np.log(1 - normalized_path_cost + 1e-7)
+            # normalized_path_cost = (path_cost - 0) / (mec_net.max_path_cost - 0)
+            # reward_path_cost = np.log(1 - normalized_path_cost + 1e-7)
+            reward_path_cost = np.log(mec_net.max_path_cost - path_cost + 1e-7)
 
             disk_overutil = feature_vectors[pair_index][-1]
             # FIXME: DISK_FAULT_THRESHOLD는 일반적으로 미리 알 수 없는 환경 변수로 오히려 DRL이 추론해야 되는 대상 (system dynamics).
             #  학습 단계에서 direct 사용은 부적절 but ln(1-x) 함수가 x에 대한 0~1 스케일링 요구해서 어쩔 수 없이 쓰고 있음
-            normalized_disk_overutil = (disk_overutil - 0) / (DISK_FAULT_THRESHOLD - 0)
-            reward_disk_overutil = np.log(1 - normalized_disk_overutil + 1e-7)
+            # normalized_disk_overutil = (disk_overutil - 0) / (DISK_FAULT_THRESHOLD - 0)
+            # reward_disk_overutil = np.log(1 - normalized_disk_overutil + 1e-7)
+            reward_disk_overutil = np.log(DISK_FAULT_THRESHOLD - disk_overutil + 1e-7)
 
             REWARD = W1 * reward_path_cost + W2 * reward_disk_overutil
             # REWARD = reward_path_cost

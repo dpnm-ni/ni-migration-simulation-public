@@ -17,7 +17,7 @@ class CSVReader:
         for i in range(len(df)):
             row = df.iloc[i]
 
-            # FIXME: final alg performance become different due to this randomness
+            # FIXME: use modular operation
             # identify user location (edge machine) of the service
             edge_machine_id = row.edge_id.astype(dtype=str)
             if len(edge_machine_id) == 4:

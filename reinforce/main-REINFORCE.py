@@ -38,7 +38,7 @@ def main():
     machine_profiles = [MachineProfile(64, 1, 1) for _ in range(NUM_MACHINES)]
     service_profiles = CSVReader(SERVICE_FILE, NUM_MACHINES).generate(SERVICE_FILE_OFFSET, SERVICE_FILE_LENGTH)
 
-    """
+
     # 각 서비스 요청의 엣지 위치와 관계없이 수용가능한 머신들 리스트로 뽑아서 그 중에서 랜덤 선택
     # 비현실적이지만 FirstFit 보다 로드밸런싱 측면에서 나을 수 있음
     # Random
@@ -103,7 +103,6 @@ def main():
             accum_path=episode.simulation.monitor.accum_path_cost,
             avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
     log.debug("selected (m, s) pairs: {}".format(episode.simulation.scheduler.valid_pairs))
-    """
 
 
     # # REINFORCE 알고리즘으로 일단 서비스 latency (path cost)만 리워드로 받아 최적 배치 학습
@@ -122,6 +121,8 @@ def main():
         avg_queuing_delays = list([])
         accum_path_costs = list([])
         avg_path_costs = list([])
+        # disk_overutil 리워드 1일 때가 0.5, 0보다 interruption 개수 크게 나옴...이상한데 failure 랜덤성 때문인가?
+        avg_num_interruption = 0
         # for debug purpose
         last_episode = None
         for epi in range(NUM_EPISODES):
@@ -147,6 +148,7 @@ def main():
             accum_path_costs.append(episode.simulation.monitor.accum_path_cost)
             # FIXME:
             avg_path_costs.append(np.mean(episode.simulation.monitor.hist_path_costs))
+            avg_num_interruption += len(episode.simulation.mec_net.interrupted_services)
             last_episode = episode
 
             observations_epi = []
@@ -161,11 +163,19 @@ def main():
             agent.train_net(observations_epi, actions_epi, rewards_epi, episode)
             episode.simulation.scheduler.deployment_algorithm.current_trajectory = []
 
+            # !찍었을 때 누적 보상이 증가하지는 않음을 확인함
+            # cum_reward_epi = 0
+            # for reward in rewards_epi:
+            #     if reward is not None:
+            #         cum_reward_epi += reward
+            # print(cum_reward_epi)
+
         # print("\nselected (m, s) pairs: {}".format(last_episode.simulation.scheduler.valid_pairs))
         with open("result.txt", 'a') as f:
             print(np.mean(makespans), np.mean(computation_times),
                   np.mean(avg_completion_times), np.mean(avg_residence_times), np.mean(avg_queuing_delays),
-                  np.mean(accum_path_costs), np.mean(avg_path_costs), file=f)
+                  np.mean(accum_path_costs), np.mean(avg_path_costs), np.mean(avg_num_interruption),
+                  file=f)
         # print(np.std(makespans), np.std(computation_times),
         #       np.std(average_completions), np.std(average_slowdowns),
         #       np.std(accum_path_costs), np.std(avg_path_costs))
