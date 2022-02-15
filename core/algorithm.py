@@ -27,7 +27,6 @@ class RandomAlgorithm(Algorithm):
 
 
 class FirstFitAlgorithm(Algorithm):
-    # TODO: ensure to cover any failure case
     def __call__(self, mec_net, clock):
         waiting_services = mec_net.get_waiting_services()
         machines = mec_net.machines

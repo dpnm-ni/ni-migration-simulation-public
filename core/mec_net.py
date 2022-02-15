@@ -28,15 +28,8 @@ class MECNetwork:
         # print(dict(nx.all_pairs_dijkstra_path(G)))
         # print(dict(nx.all_pairs_dijkstra_path_length(G)))
 
-        # FIXME: get the maximum of "shortest" path costs between all nodes
-        dict_dest_cost = dict(nx.all_pairs_dijkstra_path_length(G))
-        max_path_cost = 0
-        for key in dict_dest_cost.keys():
-            path_cost = max(dict_dest_cost[key].values())
-            if path_cost > max_path_cost:
-                max_path_cost = path_cost
-        # print(max_path_cost)
-        self.max_path_cost = max_path_cost
+        # set maximum path cost which is used in reward function in Algorithm
+        self.max_path_cost = self.get_max_path_cost(G)
 
         topology_json = nx.node_link_data(G)
         del topology_json["directed"]
@@ -75,10 +68,19 @@ class MECNetwork:
         nx.draw_networkx_edge_labels(self.topology_graph, pos=pos, edge_labels=labels)
         plt.show()
 
+    def get_max_path_cost(self, G):
+        dict_dest_cost = dict(nx.all_pairs_dijkstra_path_length(G))
+        max_path_cost = 0
+        for key in dict_dest_cost.keys():
+            path_cost = max(dict_dest_cost[key].values())
+            if path_cost > max_path_cost:
+                max_path_cost = path_cost
+        # print(max_path_cost)
+        return max_path_cost
+
     def get_path_cost(self, source_id, dest_id):
         source = "server{}".format(source_id)
         dest = "server{}".format(dest_id)
-
         return nx.dijkstra_path_length(self.topology_graph, source, dest)
 
     def get_least_cost_dest_ids(self, source_id, machine_ids):

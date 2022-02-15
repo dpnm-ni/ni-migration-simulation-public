@@ -19,7 +19,6 @@ class Simulation:
         self.env.process(self.monitor.run())
         self.env.process(self.injector.run())
 
-    # FIXME: current condition only ensures the service provisioning, not all the services' end.
     def is_finished(self):
         return self.service_broker.destroyed \
                and len(self.mec_net.get_waiting_services()) == 0 \

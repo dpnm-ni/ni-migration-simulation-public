@@ -4,7 +4,7 @@ from core.scheduler import Scheduler
 from core.broker import Broker
 from core.simulation import Simulation
 from core.monitor import SLAMonitor
-from reinforce.injector import FaultInjector
+from deployment.reinforce.injector import FaultInjector
 
 
 class Episode:

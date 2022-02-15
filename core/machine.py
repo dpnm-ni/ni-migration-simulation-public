@@ -76,7 +76,7 @@ class Machine:
             # self.stop_service_instance(service)
             self.mec_net.interrupted_services.append(service)
 
-        # !중요: class 간 dependency 때문에(path cost 연산 등) 해당 머신을 topology 자체에서 지우지는 말고 스케쥴링만 배제되도록 설정
+        # !중요: class 간 dependency 때문에(path cost 연산 등) 해당 머신을 topology 자체에서 지우지는 말고 스케쥴링만 배제되도록 임시 설정해놓음
         # self.mec_net.machines.remove(self)
         # self.cpu_capacity = 0
         # self.memory_capacity = 0

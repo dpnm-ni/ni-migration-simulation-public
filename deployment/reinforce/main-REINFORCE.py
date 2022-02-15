@@ -6,10 +6,9 @@ from core.machine import MachineProfile
 from core.episode import Episode
 from util.csv_reader import CSVReader
 from util.tools import average_completion_time, average_residence_cost, average_queuing_delay
-from util.feature_functions import *
-from reinforce.agent import REINFORCEAgent
-from reinforce.algorithm import REINFORCEAlgorithm
-from reinforce.reward_giver import LeastCurrentPathCostRewardGiver, LeastAccumPathCostRewardGiver
+from deployment.reinforce.agent import REINFORCEAgent
+from deployment.reinforce.algorithm import REINFORCEAlgorithm
+from deployment.reinforce.reward_giver import LeastAccumPathCostRewardGiver
 
 
 # num_machines = 5 if using test_least_cost.csv
@@ -131,9 +130,7 @@ def main():
             # s = env.reset()
 
             tic = time.time()
-            algorithm = REINFORCEAlgorithm(agent, reward_giver,
-                                    features_extract_func=features_extract_func,
-                                    features_normalize_func=features_normalize_func)
+            algorithm = REINFORCEAlgorithm(agent, reward_giver, features_extract_func=None, features_normalize_func=None)
             episode = Episode(machine_profiles, service_profiles, algorithm)
             algorithm.reward_giver.attach(episode.simulation)
             episode.run()

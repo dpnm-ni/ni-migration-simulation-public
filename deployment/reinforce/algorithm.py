@@ -1,8 +1,7 @@
 import numpy as np
 import torch
-import math
 from torch.distributions import Categorical
-from reinforce.injector import DISK_FAULT_THRESHOLD
+from deployment.reinforce.injector import DISK_FAULT_THRESHOLD
 
 # ! 학습 feature 중 machine-service 간 path cost에 임의로 가중치 부여 (학습 잘되도록)
 # FIXME: 이런식으로 feature에 임의의 weight 주는 것 보다는 뉴럴넷 input을 정규화하고 리워드 계산 부분을 구체화하는게 확장성 더 좋을듯?
