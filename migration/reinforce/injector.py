@@ -21,8 +21,8 @@ class FaultInjector:
             for machine in machines:
                 # !일단 주사위 안던지고 count 임계치만 넘으면 서버 fault 처리
                 if machine.mon_disk_overutil_cnt >= DISK_FAULT_THRESHOLD:
-                    log.debug("[{}] Machine {} has been failed. running instances will be interrupted...".format(
-                        self.env.now, machine.id))
+                    log.info("[{}] Machine {} at Edge {} has been failed. running instances will be interrupted...".format(
+                        self.env.now, machine.id, machine.machine_profile.edgeDC_id))
                     machine.destroy()
                     machine.mon_disk_overutil_cnt = 0
 

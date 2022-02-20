@@ -7,8 +7,7 @@ class Machine:
     global_index = -1
 
     def __init__(self, machine_profile):
-        # self.id = self.get_machine_id()
-        self.id = machine_profile.machine_id
+        self.id = Machine.get_global_id()
         self.mec_net = None
 
         self.machine_profile = machine_profile
@@ -27,7 +26,7 @@ class Machine:
         self.destroyed = False
 
     @classmethod
-    def get_machine_id(cls):
+    def get_global_id(cls):
         cls.global_index += 1
         return cls.global_index
 
@@ -36,8 +35,8 @@ class Machine:
 
     # Migrating instanceA from server1 to server2 is simulated by:
     # if server2.can_accommodate(instanceA)
-    #   server1.stop_container_instance(instanceA)
-    #   server2.run_container_instance(instanceA)
+    #   server1.stop_service_instance(instanceA)
+    #   server2.run_service_instance(instanceA)
     def run_service_instance(self, service):
         self.cpu -= service.cpu
         assert self.cpu >= 0
@@ -72,7 +71,6 @@ class Machine:
             # https://simpy.readthedocs.io/en/latest/simpy_intro/process_interaction.html#interrupting-another-process
             # self.env.interrupt(service)
             service.work_event.interrupt()
-            # FIXME: for문 iterable(services)에 대한 remove 연산 때문에 일부 서비스가 interrupt 되지 않음. 유사한 코드 전체적으로 확인 필요
             # self.stop_service_instance(service)
             self.mec_net.interrupted_services.append(service)
 
@@ -101,9 +99,11 @@ class Machine:
 
 
 class MachineProfile:
-    global_index = 0
 
-    def __init__(self, cpu_capacity, memory_capacity, disk_capacity, cpu=None, memory=None, disk=None):
+    def __init__(self, cpu_capacity, memory_capacity, disk_capacity, cpu=None, memory=None, disk=None, edgeDC_id=None):
+        memory_capacity = round(Decimal(memory_capacity), 9)
+        disk_capacity = round(Decimal(disk_capacity), 9)
+
         self.cpu_capacity = cpu_capacity
         self.memory_capacity = memory_capacity
         self.disk_capacity = disk_capacity
@@ -112,5 +112,4 @@ class MachineProfile:
         self.memory = memory_capacity if memory is None else memory
         self.disk = disk_capacity if disk is None else disk
 
-        self.machine_id = MachineProfile.global_index
-        MachineProfile.global_index += 1
+        self.edgeDC_id = edgeDC_id

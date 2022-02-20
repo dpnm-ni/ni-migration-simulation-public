@@ -1,6 +1,6 @@
 from base_logger import log
 
-DISK_OVERUTIL_THRESHOLD = 0.9
+DISK_OVERUTIL_THRESHOLD = 0.8
 
 
 class SLAMonitor:
@@ -24,7 +24,7 @@ class SLAMonitor:
         while not self.simulation.is_finished():
             sum_path_cost = 0
             for service in self.mec_net.get_unfinished_services():
-                path_cost = self.mec_net.get_path_cost(service.edge_machine_id, service.machine.id)
+                path_cost = self.mec_net.get_path_cost(service.user_loc, service.machine.id)
                 # log.debug("[{}] RTT of Service {} is {} (src:{} <=> dst:{})".format(
                 #     self.env.now, service.id, path_cost * 2, service.edge_machine_id, service.machine.id))
                 sum_path_cost += path_cost

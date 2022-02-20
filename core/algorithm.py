@@ -4,12 +4,14 @@ from base_logger import log
 
 
 class Algorithm(ABC):
+
     @abstractmethod
     def __call__(self, cluster, clock):
         pass
 
 
 class RandomAlgorithm(Algorithm):
+
     def __call__(self, mec_net, clock):
         waiting_services = mec_net.get_waiting_services()
         machines = mec_net.machines
@@ -27,6 +29,7 @@ class RandomAlgorithm(Algorithm):
 
 
 class FirstFitAlgorithm(Algorithm):
+
     def __call__(self, mec_net, clock):
         waiting_services = mec_net.get_waiting_services()
         machines = mec_net.machines
@@ -38,35 +41,45 @@ class FirstFitAlgorithm(Algorithm):
         return None, None
 
 
-# go to edge machine first. if not available, go to an alternative machine with least cost
-# in ISP view (and current alg impl.), it is not necessarily to be an adjacent one (but graph property ensures it?)
+# TODO: try part can be included in except part?
 class LeastCostAlgorithm(Algorithm):
+
     def __call__(self, mec_net, clock):
         waiting_services = mec_net.get_waiting_services()
         machines = mec_net.machines
         for service in waiting_services:
+            # try to deploy a service in its closest edge DC
             try:
-                available = machines[service.edge_machine_id].can_accommodate(service.service_profile)
-                if available == 0:
-                    raise Exception
+                machine_to_deploy = self.get_first_fit_edgeDC_machine(service, service.user_loc, machines)
+                if machine_to_deploy is not None:
+                    return machine_to_deploy, service
                 else:
-                    edge_machine = machines[service.edge_machine_id]
-                    return edge_machine, service
-            except (IndexError, Exception):
-                candidate_machine_ids = [machine.id for machine in machines if machine.id != service.edge_machine_id]
-                while True:
-                    least_cost_machine_ids = mec_net.get_least_cost_dest_ids(service.edge_machine_id, candidate_machine_ids)
-                    if least_cost_machine_ids is None:
-                        break
-                    for _id in least_cost_machine_ids:
-                        if machines[_id].can_accommodate(service.service_profile):
-                            alternative_machine = machines[_id]
-                            log.debug(
-                                "[{}] Service {} from Edge {} cannot run on its edge machine. go to Machine {}".format(
-                                    clock, service.id, service.edge_machine_id, alternative_machine.id))
-                            return alternative_machine, service
+                    # if no available machines in the closest edge DC
+                    raise Exception
 
-                        # exclude the not available machine
-                        candidate_machine_ids.remove(_id)
+            # try next closest edge DC until available one found
+            except (IndexError, Exception):
+                least_cost_edgeDCs = mec_net.get_least_cost_edgeDCs(service.user_loc)
+                # ensure edgeDCs are sorted according to their path costs from the service in ascending order
+                for edgeDC_id in least_cost_edgeDCs:
+                    machine_to_deploy = self.get_first_fit_edgeDC_machine(service, edgeDC_id, machines)
+                    if machine_to_deploy is not None:
+                        log.debug(
+                            "[{}] Service {} from Edge {} cannot be deployed in its edge DC. go to Machine {} at Edge {}"
+                                .format(clock, service.id, service.user_loc, machine_to_deploy.id, edgeDC_id))
+                        return machine_to_deploy, service
+
+            # indication that scheduling is delayed
+            log.debug("[{}] Service {} from Edge {} cannot be deployed in any edge DCs. skip it for now".format(
+                clock, service.id, service.user_loc))
 
         return None, None
+
+    def get_first_fit_edgeDC_machine(self, service, edgeDC_id, machines):
+        edgeDC_machines = [machine for machine in machines if
+                           machine.machine_profile.edgeDC_id == edgeDC_id]
+        for i in range(len(edgeDC_machines)):
+            if edgeDC_machines[i].can_accommodate(service.service_profile):
+                # choose the firstfit machine
+                return edgeDC_machines[i]
+        return None

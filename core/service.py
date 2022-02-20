@@ -17,7 +17,9 @@ class Service:
         self.memory = self.service_profile.memory
         self.disk = self.service_profile.disk
         self.duration = self.service_profile.duration
-        self.edge_machine_id = self.service_profile.edge_machine_id
+        # self.edge_machine_id = self.service_profile.edge_machine_id
+        # !should be updated when user movement event
+        self.user_loc = self.service_profile.user_loc
 
         # machine where the instance of this service is actually deployed (by the deployment algorithm configured)
         self.machine = None
@@ -63,7 +65,8 @@ class Service:
             self.started_timestamp = None
             self.queued_timestamp = self.env.now
 
-            log.debug("[{}] Service {} interrupted. go back to waiting queue".format(self.env.now, self.id))
+            log.info("[{}] Service {} (duration: {}) interrupted. go back to waiting queue".format(
+                self.env.now, self.id, self.duration))
 
     # TODO: refactor the entire codes to be coherent in handling instance properties
     def is_started(self):
@@ -78,11 +81,12 @@ class Service:
 
 
 class ServiceProfile:
-    def __init__(self, service_id, submit_time, cpu, memory, disk, duration, edge_machine_id):
+    def __init__(self, service_id, submit_time, cpu, memory, disk, duration, user_loc):
         self.service_id = service_id
         self.submit_time = submit_time
         self.cpu = cpu
         self.memory = memory
         self.disk = disk
         self.duration = duration
-        self.edge_machine_id = edge_machine_id
+        # self.edge_machine_id = edge_machine_id
+        self.user_loc = user_loc

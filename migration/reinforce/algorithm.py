@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch.distributions import Categorical
-from deployment.reinforce.injector import DISK_FAULT_THRESHOLD
+from migration.reinforce.injector import DISK_FAULT_THRESHOLD
 
 # ! 학습 feature 중 machine-service 간 path cost에 임의로 가중치 부여 (학습 잘되도록)
 # FIXME: 이런식으로 feature에 임의의 weight 주는 것 보다는 뉴럴넷 input을 정규화하고 리워드 계산 부분을 구체화하는게 확장성 더 좋을듯?
@@ -42,7 +42,7 @@ class REINFORCEAlgorithm:
         feature_vectors = []
         for machine, service in valid_pairs:
             # !convert a valid pair to [machine.profile + service.profile + path cost] as a feature vector
-            path_cost = [PATH_COST_WEIGHT * machine.mec_net.get_path_cost(service.edge_machine_id, machine.id)]
+            path_cost = [PATH_COST_WEIGHT * machine.mec_net.get_path_cost(service.user_loc, machine.id)]
             disk_overutil = [machine.mon_disk_overutil_cnt]
             # feature_vector = self.extract_machine_features(machine) + self.extract_service_features(service) + path_cost
             feature_vector = self.extract_machine_features(machine) + self.extract_service_features(service) + path_cost + disk_overutil

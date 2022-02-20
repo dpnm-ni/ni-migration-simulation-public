@@ -33,8 +33,8 @@ class Scheduler:
             if machine is None or service is None:
                 break
             else:
-                log.debug("[{}] Service {} from Edge {} started on Machine {} (duration: {})".format(
-                    self.env.now, service.id, service.edge_machine_id, machine.id, service.duration))
+                log.debug("[{}] Service {} from Edge {} started on Machine {} at Edge {} (duration: {})".format(
+                    self.env.now, service.id, service.user_loc, machine.id, machine.machine_profile.edgeDC_id, service.duration))
                 service.start_service_instance(machine)
                 log.debug("[{}] Machine state after: {}".format(self.env.now, machine.get_state()))
                 self.valid_pairs.append((machine.id, service.id))

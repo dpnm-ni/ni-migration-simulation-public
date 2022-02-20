@@ -1,0 +1,28 @@
+---
+mec_net:
+  num_simple_edges: 7
+  num_leaf_spine_edges: 4
+  num_three_tier_edges: 0
+
+simple_edge:
+  machine_profile:
+    cpu: 64
+    memory: 1
+    disk: 1
+
+leaf_spine_edge:
+  num_spines: 2
+  num_leaves: 4
+  num_fanout: 2
+  machine_profile:
+    cpu: 16
+    memory: 0.5
+    disk: 0.5
+
+mec_topology:
+  abilene:
+    num_nodes: 11
+    topo_file: graph/Abilene1.gml
+  kreonet:
+    num_nodes: 13
+    topo_file: graph/Kreonet1.gml
