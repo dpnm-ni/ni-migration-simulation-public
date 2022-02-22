@@ -16,17 +16,21 @@ class MECNetwork:
         # for debug purpose
         self.interrupted_services = []
 
-        self.topo = self.create_topology("graph/Abilene1.gml")
+        # self.topo = self.create_topology("graph/Abilene1.gml")
         # self.topo = self.create_topology("graph/Kreonet1.gml")
+        self.topo = self.create_topology("graph/Edgenet.gml")
 
+        # FIXME: for clarity, possibly change the name to dcs?
+        #  edgeDCs[0:num_simple_edges-1] correspond to cloud DCs
+        #  edgeDCs[num_simple_edges:NUM_EDGE_DC] correspond to edge DCs
         self.edgeDCs = []
         # dictionary for computing path costs between edge DCs
         self.edgeDC_topos = {}
 
     def create_topology(self, graph_file):
         G = self.assign_link_weight_by_distance(nx.read_gml(path=graph_file))
-        print(f"nodes: {G.nodes(data=True)}")
-        print(f"edges: {G.edges(data=True)}")
+        # print(f"nodes: {G.nodes(data=True)}")
+        # print(f"edges: {G.edges(data=True)}")
         # print(dict(nx.all_pairs_dijkstra(G)))
         # print(dict(nx.all_pairs_dijkstra_path(G)))
         # print(dict(nx.all_pairs_dijkstra_path_length(G)))
@@ -67,17 +71,23 @@ class MECNetwork:
             edgeDC.create_machines(self)
             self.edgeDCs.append(edgeDC)
 
-        for _ in range(cfg["mec_net"]["num_three_tier_edges"]):
-            edgeDC = ThreeTierEdgeDC()
-            edgeDC.create_machines(self)
-            self.edgeDCs.append(edgeDC)
+        # for _ in range(cfg["mec_net"]["num_three_tier_edges"]):
+        #     edgeDC = ThreeTierEdgeDC()
+        #     edgeDC.create_machines(self)
+        #     self.edgeDCs.append(edgeDC)
 
         # for i in range(len(self.edgeDCs)):
         #     self.edgeDC_topos[self.edgeDCs[i].id] = self.edgeDCs[i].topo
 
     # replace initial nodes created by graph file with corresponding edge DCs we just create
     def apply_edgeDCs(self):
-        dict_node_to_replace = dict(zip(self.topo.nodes, self.edgeDCs))
+        # fetch nodes in the original graph that are cloud DC and edge DCs except for router nodes
+        dc_nodes = []
+        for node_name, data in self.topo.nodes.items():
+            if data["type"] == "dc":
+                dc_nodes.append(node_name)
+
+        dict_node_to_replace = dict(zip(dc_nodes, self.edgeDCs))
         for node in dict_node_to_replace.keys():
             edge_dc = dict_node_to_replace[node].topo
             longitude = self.topo.nodes[node]["Longitude"]
@@ -107,10 +117,16 @@ class MECNetwork:
             pos[n] = (dd.get("Longitude"), dd.get("Latitude"))
         # print(pos)
 
-        nx.draw(self.topo, pos=pos, with_labels=True)
+        nx.draw(self.topo, pos=pos)
+        node_labels = nx.draw_networkx_labels(self.topo, pos=pos)
+        for _, t in node_labels.items():
+            t.set_rotation(45)
+
         # https://stackoverflow.com/questions/57421372/display-edge-weights-on-networkx-graph
         labels = {e: self.topo.edges[e]['weight'] for e in self.topo.edges}
-        nx.draw_networkx_edge_labels(self.topo, pos=pos, edge_labels=labels)
+        edge_labels = nx.draw_networkx_edge_labels(self.topo, pos=pos, edge_labels=labels)
+        for _, t in edge_labels.items():
+            t.set_rotation(45)
         plt.show()
 
     def get_max_path_cost(self, G):
@@ -142,7 +158,8 @@ class MECNetwork:
     # source_id: service.user_loc
     def get_least_cost_edgeDCs(self, user_loc):
         source = self.edgeDCs[user_loc]
-        dict_dest_cost = dict(nx.all_pairs_dijkstra_path_length(self.topo))[source.topo]
+        # dict_dest_cost = dict(nx.all_pairs_dijkstra_path_length(self.topo))[source.topo]
+        dict_dest_cost = nx.single_source_dijkstra_path_length(self.topo, source.topo)
         # remove the closest edge DC because we confirmed that all of its machines are not available
         del dict_dest_cost[source.topo]
 
@@ -160,7 +177,15 @@ class MECNetwork:
         least_cost_edgeDCs = []
         # ensure keys (topos of destination edgeDCs) are sorted according to their values (path costs) in ascending order
         for edgeDC_topo in dict_dest_cost.keys():
-            edgeDC_id = str(edgeDC_topo.name).lstrip("edge")
+            # skip path costs to router nodes
+            if isinstance(edgeDC_topo, str):
+                continue
+            if str(edgeDC_topo.name).startswith("edge"):
+                edgeDC_id = str(edgeDC_topo.name).lstrip("edge")
+            # elif str(edgeDC_topo.name).startswith("cloud"):
+            else:
+                # ensure that edgeDCs[0] cloud DC is also considered
+                edgeDC_id = str(edgeDC_topo.name).lstrip("cloud")
             least_cost_edgeDCs.append(int(edgeDC_id))
         return least_cost_edgeDCs
 
@@ -174,6 +199,7 @@ class MECNetwork:
     def add_service(self, service):
         self.services.append(service)
 
+    # get a list of pending services to be deployed
     def get_waiting_services(self):
         ls = []
         for service in self.services:
@@ -181,7 +207,7 @@ class MECNetwork:
                 ls.append(service)
         return ls
 
-    # get list of running services
+    # get a list of running services
     def get_unfinished_services(self):
         ls = []
         for service in self.services:
@@ -194,43 +220,44 @@ def test():
     mec_net = MECNetwork()
     print(f"# nodes: {mec_net.topo.number_of_nodes()}, nodes: {mec_net.topo.nodes(data=True)}")
     print(f"# edges: {mec_net.topo.number_of_edges()}, edges: {mec_net.topo.edges(data=True)}")
-    # mec_net.draw_topology()
+    mec_net.draw_topology()
     print(mec_net.max_path_cost)
 
-    # edge_dc5 = LeafSpineEdgeDC()
-    edge_dc5 = SimpleEdgeDC()
-    edge_dc8 = LeafSpineEdgeDC()
-    edge_dc9 = LeafSpineEdgeDC()
-    dict_node_to_replace = {"server5": edge_dc5, "server8": edge_dc8, "server9": edge_dc9}
-    for node in dict_node_to_replace.keys():
-        edge_dc = dict_node_to_replace[node].topo
-        longitude = mec_net.topo.nodes[node]["Longitude"]
-        latitude = mec_net.topo.nodes[node]["Latitude"]
-
-        # https://networkx.org/documentation/stable/tutorial.html#nodes
-        # contains the nodes of edge1 as nodes of mec_net
-        # mec_net.topo.add_nodes_from(edge_dc, Longitude=longitude, Latitude=latitude)
-        # vs. contains edge1 as a node of mec_net
-        mec_net.topo.add_node(edge_dc, Longitude=longitude, Latitude=latitude)
-
-        # print(mec_net.topo.edges(node, data=True))
-        edges = mec_net.topo.edges(node)
-        for edge in edges:
-            weight = mec_net.topo.edges[(edge[0], edge[1])]["weight"]
-            mec_net.topo.add_edge(edge_dc, edge[1], weight=weight)
-        mec_net.topo.remove_node(node)
-
-    print(f"# nodes: {mec_net.topo.number_of_nodes()}, nodes: {mec_net.topo.nodes(data=True)}")
-    print(f"# edges: {mec_net.topo.number_of_edges()}, edges: {mec_net.topo.edges(data=True)}")
-    mec_net.draw_topology()
-
-    print(nx.dijkstra_path_length(mec_net.topo, edge_dc5.topo, edge_dc8.topo))
-    print(nx.dijkstra_path_length(mec_net.topo, edge_dc5.topo, edge_dc9.topo))
-
-    # networkx.exception.NodeNotFound: Either source Graph named 'edge0' with 14 nodes and 16 edges or target {'type': 'tor'} is not in G
-    # print(nx.shortest_path_length(mec_net.topo, edge_dc5.topo, edge_dc9.topo.nodes["2--7"]))
-    print(nx.dijkstra_path_length(mec_net.topo, edge_dc5.topo, edge_dc9.topo)
-          + dict(nx.shortest_path_length(edge_dc9.topo))[0][len(edge_dc9.topo.nodes)-1])
+    # testing valid in Abilene/Kreonet only
+    # # edge_dc5 = LeafSpineEdgeDC()
+    # edge_dc5 = SimpleEdgeDC()
+    # edge_dc8 = LeafSpineEdgeDC()
+    # edge_dc9 = LeafSpineEdgeDC()
+    # dict_node_to_replace = {"server5": edge_dc5, "server8": edge_dc8, "server9": edge_dc9}
+    # for node in dict_node_to_replace.keys():
+    #     edge_dc = dict_node_to_replace[node].topo
+    #     longitude = mec_net.topo.nodes[node]["Longitude"]
+    #     latitude = mec_net.topo.nodes[node]["Latitude"]
+    #
+    #     # https://networkx.org/documentation/stable/tutorial.html#nodes
+    #     # contains the nodes of edge1 as nodes of mec_net
+    #     # mec_net.topo.add_nodes_from(edge_dc, Longitude=longitude, Latitude=latitude)
+    #     # vs. contains edge1 as a node of mec_net
+    #     mec_net.topo.add_node(edge_dc, Longitude=longitude, Latitude=latitude)
+    #
+    #     # print(mec_net.topo.edges(node, data=True))
+    #     edges = mec_net.topo.edges(node)
+    #     for edge in edges:
+    #         weight = mec_net.topo.edges[(edge[0], edge[1])]["weight"]
+    #         mec_net.topo.add_edge(edge_dc, edge[1], weight=weight)
+    #     mec_net.topo.remove_node(node)
+    #
+    # print(f"# nodes: {mec_net.topo.number_of_nodes()}, nodes: {mec_net.topo.nodes(data=True)}")
+    # print(f"# edges: {mec_net.topo.number_of_edges()}, edges: {mec_net.topo.edges(data=True)}")
+    # mec_net.draw_topology()
+    #
+    # print(nx.dijkstra_path_length(mec_net.topo, edge_dc5.topo, edge_dc8.topo))
+    # print(nx.dijkstra_path_length(mec_net.topo, edge_dc5.topo, edge_dc9.topo))
+    #
+    # # networkx.exception.NodeNotFound: Either source Graph named 'edge0' with 14 nodes and 16 edges or target {'type': 'tor'} is not in G
+    # # print(nx.shortest_path_length(mec_net.topo, edge_dc5.topo, edge_dc9.topo.nodes["2--7"]))
+    # print(nx.dijkstra_path_length(mec_net.topo, edge_dc5.topo, edge_dc9.topo)
+    #       + dict(nx.shortest_path_length(edge_dc9.topo))[0][len(edge_dc9.topo.nodes)-1])
 
 
 if __name__ == '__main__':

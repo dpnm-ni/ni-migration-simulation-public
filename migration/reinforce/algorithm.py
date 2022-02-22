@@ -7,8 +7,8 @@ from migration.reinforce.injector import DISK_FAULT_THRESHOLD
 # FIXME: 이런식으로 feature에 임의의 weight 주는 것 보다는 뉴럴넷 input을 정규화하고 리워드 계산 부분을 구체화하는게 확장성 더 좋을듯?
 PATH_COST_WEIGHT = 10
 
-W1 = 0.5
-W2 = 0.5
+W1 = 0.7
+W2 = 0.3
 
 
 class Transition:

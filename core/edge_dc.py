@@ -32,7 +32,7 @@ class SimpleEdgeDC(EdgeDC):
         super().__init__()
 
     def create_topology(self):
-        name = "edge" + str(self.id)
+        name = "cloud" + str(self.id)
         G = nx.Graph(name=name)
         G.add_nodes_from([(0, {"type": "simple"})])
         # print(f"# nodes: {G.number_of_nodes()}, nodes: {G.nodes(data=True)}")

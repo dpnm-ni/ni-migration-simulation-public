@@ -81,7 +81,7 @@ class Service:
 
 
 class ServiceProfile:
-    def __init__(self, service_id, submit_time, cpu, memory, disk, duration, user_loc):
+    def __init__(self, service_id, submit_time, cpu, memory, disk, duration, user_loc, e2e_latency):
         self.service_id = service_id
         self.submit_time = submit_time
         self.cpu = cpu
@@ -90,3 +90,4 @@ class ServiceProfile:
         self.duration = duration
         # self.edge_machine_id = edge_machine_id
         self.user_loc = user_loc
+        self.e2e_latency = e2e_latency

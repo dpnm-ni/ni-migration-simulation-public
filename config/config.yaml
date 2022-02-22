@@ -1,14 +1,14 @@
 ---
 mec_net:
-  num_simple_edges: 7
-  num_leaf_spine_edges: 4
+  num_simple_edges: 1
+  num_leaf_spine_edges: 15
   num_three_tier_edges: 0
 
 simple_edge:
   machine_profile:
-    cpu: 64
-    memory: 1
-    disk: 1
+    cpu: 256
+    memory: 10
+    disk: 10
 
 leaf_spine_edge:
   num_spines: 2
@@ -26,3 +26,6 @@ mec_topology:
   kreonet:
     num_nodes: 13
     topo_file: graph/Kreonet1.gml
+  edgenet:
+    num_nodes: 16
+    topo_file: graph/Edgenet.gml

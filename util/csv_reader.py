@@ -1,6 +1,5 @@
 import decimal
 import pandas as pd
-import numpy as np
 from decimal import Decimal, getcontext
 from operator import attrgetter
 from core.service import ServiceProfile
@@ -17,16 +16,8 @@ class CSVReader:
         self.service_profiles = []
         for i in range(len(df)):
             row = df.iloc[i]
-
-            # FIXME: use modular operation
-            # identify user location (edge machine) of the service
-            # edge_machine_id = row.edge_id.astype(dtype=str)
-            # if len(edge_machine_id) == 4:
-            #     edge_machine_id = np.random.randint(0, num_machines)
-            # else:
-            #     edge_machine_id = int(edge_machine_id[0])
-            user_loc = row.user_loc.astype(dtype=int) % num_edgeDCs
-
+            # !note: +1 to avoid edgeDCs[0] as the central DC
+            user_loc = (row.user_loc.astype(dtype=int) % num_edgeDCs) + 1
             self.service_profiles.append(
                 ServiceProfile(row.service_id.astype(dtype=int),
                                row.submit_time.astype(dtype=int),
@@ -34,7 +25,8 @@ class CSVReader:
                                round(Decimal(row.plan_mem), 9),
                                round(Decimal(row.plan_disk), 9),
                                row.duration,
-                               user_loc))
+                               user_loc,
+                               row.e2e_latency.astype(dtype=int)))
 
         self.service_profiles.sort(key=attrgetter('submit_time'))
 
