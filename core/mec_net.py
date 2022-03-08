@@ -139,8 +139,15 @@ class MECNetwork:
         # print(max_path_cost)
         return max_path_cost
 
-    # !source_id: service.user_loc (so edge DC id)
-    # !dest_id: destination machine id
+    def get_path_length(self, source_id, dest_id):
+        source = self.edgeDCs[source_id]
+        dest_edgeDC_id = self.machines[dest_id].machine_profile.edgeDC_id
+        dest = self.edgeDCs[dest_edgeDC_id]
+        backbone_path_length = nx.shortest_path_length(self.topo, source.topo, dest.topo)
+        return backbone_path_length
+
+    # source_id: service.user_loc (so edge DC id)
+    # dest_id: destination machine id
     def get_path_cost(self, source_id, dest_id):
         source = self.edgeDCs[source_id]
         dest_edgeDC_id = self.machines[dest_id].machine_profile.edgeDC_id
@@ -148,14 +155,13 @@ class MECNetwork:
         # compute path cost from source edge DC to destination edge DC
         backbone_path_cost = nx.dijkstra_path_length(self.topo, source.topo, dest.topo)
 
-        # !for now, do not consider DC-internal path cost (assume # hops from ToR to Spine are 0)
-        # !when to consider, define path cost as source DC + backbone + destination DC and set self.max_path_cost accordingly
+        # TODO: for now, do not consider DC-internal path cost (assume # hops from ToR to Spine are 0)
+        #  when to consider, define path cost as source DC + backbone + destination DC and set self.max_path_cost accordingly
         # if isinstance(dest, LeafSpineEdgeDC) or isinstance(dest, ThreeTierEdgeDC):
         #     return backbone_path_cost + dict(nx.shortest_path_length(dest.topo))[0][len(dest.topo.nodes)-1]
 
         return backbone_path_cost
 
-    # source_id: service.user_loc
     def get_least_cost_edgeDCs(self, user_loc):
         source = self.edgeDCs[user_loc]
         # dict_dest_cost = dict(nx.all_pairs_dijkstra_path_length(self.topo))[source.topo]

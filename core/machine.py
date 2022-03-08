@@ -70,7 +70,7 @@ class Machine:
         for service in services:
             # https://simpy.readthedocs.io/en/latest/simpy_intro/process_interaction.html#interrupting-another-process
             # self.env.interrupt(service)
-            service.work_event.interrupt()
+            service.work_event.interrupt(cause=0)
             # self.stop_service_instance(service)
             self.mec_net.interrupted_services.append(service)
 

@@ -15,7 +15,6 @@ class FaultInjector:
 
     def run(self):
         yield self.env.timeout(5)
-
         while not self.simulation.is_finished():
             machines = self.mec_net.machines
             for machine in machines:

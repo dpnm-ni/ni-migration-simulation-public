@@ -106,8 +106,8 @@ def main():
     log.debug("selected (m, s) pairs: {}".format(episode.simulation.scheduler.valid_pairs))
     """
 
-    # # REINFORCE 알고리즘으로 일단 서비스 latency (path cost)만 리워드로 받아 최적 배치 학습
-    # # 1. DRL-based deployment hoping to be close to the performance of LeastCost
+    # REINFORCE 알고리즘으로 일단 서비스 latency (path cost)만 리워드로 받아 최적 배치 학습
+    # 1. DRL-based deployment hoping to be close to the performance of LeastCost
     agent = REINFORCEAgent(DIM_NN_INPUT)
     # reward_giver = LeastCurrentPathCostRewardGiver()
     reward_giver = LeastAccumPathCostRewardGiver()

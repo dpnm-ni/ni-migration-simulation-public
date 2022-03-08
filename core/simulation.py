@@ -1,23 +1,29 @@
 class Simulation:
-    def __init__(self, env, mec_net, service_broker, scheduler, monitor, injector):
+    def __init__(self, env, mec_net, service_broker, scheduler, monitor, injector, controller):
         self.env = env
         self.mec_net = mec_net
         self.service_broker = service_broker
         self.scheduler = scheduler
         self.monitor = monitor
         self.injector = injector
-
-        self.service_broker.attach(self)
-        self.scheduler.attach(self)
-        self.monitor.attach(self)
-        self.injector.attach(self)
+        self.controller = controller
 
     def run(self):
-        # process to submit service requests at their specified submit_time, instead of individual users
-        self.env.process(self.service_broker.run())
-        self.env.process(self.scheduler.run())
-        self.env.process(self.monitor.run())
-        self.env.process(self.injector.run())
+        if self.service_broker is not None:
+            self.service_broker.attach(self)
+            self.env.process(self.service_broker.run())
+        if self.scheduler is not None:
+            self.scheduler.attach(self)
+            self.env.process(self.scheduler.run())
+        if self.monitor is not None:
+            self.monitor.attach(self)
+            self.env.process(self.monitor.run())
+        if self.injector is not None:
+            self.injector.attach(self)
+            self.env.process(self.injector.run())
+        if self.controller is not None:
+            self.controller.attach(self)
+            self.env.process(self.controller.run())
 
     def is_finished(self):
         return self.service_broker.destroyed \

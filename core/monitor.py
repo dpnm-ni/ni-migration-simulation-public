@@ -42,7 +42,7 @@ class SLAMonitor:
                 if machine.destroyed is True:
                     continue
                 # FIXME:
-                disk_utilization = (machine.disk_capacity - machine.disk) / machine.disk_capacity
+                disk_utilization = 1 - (machine.disk / machine.disk_capacity)
                 # disk_utilization = (machine.memory_capacity - machine.memory) / machine.disk_capacity
                 machine.mon_disk_utilization = disk_utilization
                 log.debug("[{}] Machine {}'s disk utilization: {}".format(self.env.now, machine.id, machine.mon_disk_utilization))
