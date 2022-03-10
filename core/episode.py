@@ -7,7 +7,10 @@ from core.broker import Broker
 from core.simulation import Simulation
 from core.monitor import SLAMonitor
 from core.injector import FaultInjector
-from migration.mig_controller import MigrationController
+from migration.REINFORCE.algorithm import REINFORCEMigrationAlgorithm
+from migration.REINFORCE.mig_controller import REINFORCEMigrationController
+from migration.dqn.algorithm import DQNMigrationAlgorithm
+from migration.dqn.mig_controller import DQNMigrationController
 
 
 class Episode:
@@ -25,11 +28,15 @@ class Episode:
         scheduler = Scheduler(self.env, deployment_algorithm)
         monitor = SLAMonitor(self.env)
         injector = FaultInjector(self.env)
-        controller = None
-        if migration_algorithm is not None:
-            controller = MigrationController(self.env, migration_algorithm)
 
-        self.simulation = Simulation(self.env, mec_net, service_broker, scheduler, monitor, injector, controller)
+        if isinstance(migration_algorithm, DQNMigrationAlgorithm):
+            mig_controller = DQNMigrationController(self.env, migration_algorithm)
+        elif isinstance(migration_algorithm, REINFORCEMigrationAlgorithm):
+            mig_controller = REINFORCEMigrationController(self.env, migration_algorithm)
+        else:
+            mig_controller = None
+
+        self.simulation = Simulation(self.env, mec_net, service_broker, scheduler, monitor, injector, mig_controller)
 
     def run(self):
         # Schedule events to be triggered on the SimPy environment.

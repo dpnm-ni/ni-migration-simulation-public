@@ -4,12 +4,12 @@ from base_logger import log
 MIGRATION_TICK_INTERVAL = 10
 
 
-class MigrationController:
+class DQNMigrationController:
     def __init__(self, env, migration_algorithm):
         self.env = env
-        self.migration_algorithm = migration_algorithm
         self.simulation = None
         self.mec_net = None
+        self.migration_algorithm = migration_algorithm
 
     def attach(self, simulation):
         self.simulation = simulation
@@ -20,41 +20,6 @@ class MigrationController:
         while not self.simulation.is_finished():
             self.make_migration_decision()
             yield self.env.timeout(MIGRATION_TICK_INTERVAL)
-
-    # # Find an optimal placement map between all service instances and their host machines every INTERVAL.
-    # def make_migration_decision(self):
-    #     running_services = self.mec_net.get_unfinished_services()
-    #     for i in range(len(running_services)):
-    #         service = running_services[i]
-    #         # Correspond to get_action in general DQN.
-    #         dest_machine, state, action, reward = self.migration_algorithm(self.env.now, self.mec_net, service)
-    #
-    #         # The service instance stays in the current machine.
-    #         if dest_machine is None or reward is None:
-    #             # !일단은 기존 서버에서 기존 서버로의 이전 즉 no migration 케이스도 아래 else에서 취급
-    #             continue
-    #         else:
-    #             src_machine = service.machine
-    #             if src_machine == dest_machine:
-    #                 log.info("[{}] The policy says no migration is needed".format(self.env.now))
-    #
-    #             log.info("[{}] migrate Service {} from M{}-E{} to M{}-E{} (duration: {})".format(
-    #                 self.env.now, service.id, src_machine, src_machine.machine_profile.edgeDC_id,
-    #                 dest_machine, dest_machine.machine_profile.edgeDC_id, service.duration))
-    #
-    #             # Apply the live migration decision to the MEC env (corresponding to step in general DQN).
-    #             service.live_migrate_service_instance(src_machine, dest_machine)
-    #
-    #             log.debug("[{}] Source Machine state after: {}".format(self.env.now, src_machine.get_state()))
-    #             log.debug("[{}] Destination Machine state after: {}".format(self.env.now, dest_machine.get_state()))
-    #
-    #             # FIXME: how to treat next_state and final state?
-    #             # !1. Cartpole과 달리 step (migration) 직후 환경으로부터 다음 상태를 바로 확인할 수 없음 (실환경에서 구현이 힘들듯?)
-    #             # !일단 next_state <- state로 패딩처리해놨는데 REINFORCE와 달리 DQN에서는 next_state가 학습에 중요한 역할을 한다면 성능 이슈
-    #             # !2. final state에 대한 context 있게 만들 것인지? Cartpole 처럼 달성 목표(N회 버티기)가 명확한 문제 아니라면 굳이...
-    #             next_state = state
-    #             self.migration_algorithm.agent.memorize(state, action, next_state, reward)
-    #             self.migration_algorithm.agent.update_q_function()
 
     # Find an optimal placement map between all service instances and their host machines every INTERVAL.
     def make_migration_decision(self):

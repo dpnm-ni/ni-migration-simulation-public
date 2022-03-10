@@ -5,8 +5,8 @@ from config import cfg
 from base_logger import log
 from core.algorithm import RandomAlgorithm, FirstFitAlgorithm, LeastCostAlgorithm
 from core.episode import Episode
-from migration.dqn.agent import DQNMigrationAgent
-from migration.dqn.algorithm import DQNMigrationAlgorithm
+from migration.REINFORCE.agent import REINFORCEMigrationAgent
+from migration.REINFORCE.algorithm import REINFORCEMigrationAlgorithm
 from util.csv_reader import CSVReader
 from util.tools import average_completion_time, average_residence_cost, average_queuing_delay
 
@@ -36,59 +36,59 @@ def main():
     # machine_profiles = [MachineProfile(64, 1, 1) for _ in range(NUM_MACHINES)]
     service_profiles = CSVReader(SERVICE_FILE, NUM_EDGE_DC).generate(SERVICE_FILE_OFFSET, SERVICE_FILE_LENGTH)
 
-    # Random deployment without migration.
-    tic = time.time()
-    deployment_algorithm = RandomAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    log.info(
-        "makespan: {makespan}\n"
-        "computation time: {comp_time}\n"
-        "avg. completion time: {avg_comp}\n"
-        "avg. residence time ratio : {avg_resid}\n"
-        "avg. queuing delay: {avg_queue}\n"
-        "accum. path cost: {accum_path}\n"
-        "avg. path cost: {avg_path}".format(
-            makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
-            avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
-            accum_path=episode.simulation.monitor.accum_path_cost,
-            avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
-
-    # FirstFit deployment without migration.
-    tic = time.time()
-    deployment_algorithm = FirstFitAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    log.info(
-        "makespan: {makespan}\n"
-        "computation time: {comp_time}\n"
-        "avg. completion time: {avg_comp}\n"
-        "avg. residence time ratio : {avg_resid}\n"
-        "avg. queuing delay: {avg_queue}\n"
-        "accum. path cost: {accum_path}\n"
-        "avg. path cost: {avg_path}".format(
-            makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
-            avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
-            accum_path=episode.simulation.monitor.accum_path_cost,
-            avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
-
-    # LeastCost deployment without migration.
-    tic = time.time()
-    deployment_algorithm = LeastCostAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    log.info(
-        "makespan: {makespan}\n"
-        "computation time: {comp_time}\n"
-        "avg. completion time: {avg_comp}\n"
-        "avg. residence time ratio : {avg_resid}\n"
-        "avg. queuing delay: {avg_queue}\n"
-        "accum. path cost: {accum_path}\n"
-        "avg. path cost: {avg_path}".format(
-            makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
-            avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
-            accum_path=episode.simulation.monitor.accum_path_cost,
-            avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
+    # # Random deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = RandomAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # log.info(
+    #     "makespan: {makespan}\n"
+    #     "computation time: {comp_time}\n"
+    #     "avg. completion time: {avg_comp}\n"
+    #     "avg. residence time ratio : {avg_resid}\n"
+    #     "avg. queuing delay: {avg_queue}\n"
+    #     "accum. path cost: {accum_path}\n"
+    #     "avg. path cost: {avg_path}".format(
+    #         makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
+    #         avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
+    #         accum_path=episode.simulation.monitor.accum_path_cost,
+    #         avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
+    #
+    # # FirstFit deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = FirstFitAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # log.info(
+    #     "makespan: {makespan}\n"
+    #     "computation time: {comp_time}\n"
+    #     "avg. completion time: {avg_comp}\n"
+    #     "avg. residence time ratio : {avg_resid}\n"
+    #     "avg. queuing delay: {avg_queue}\n"
+    #     "accum. path cost: {accum_path}\n"
+    #     "avg. path cost: {avg_path}".format(
+    #         makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
+    #         avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
+    #         accum_path=episode.simulation.monitor.accum_path_cost,
+    #         avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
+    #
+    # # LeastCost deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = LeastCostAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # log.info(
+    #     "makespan: {makespan}\n"
+    #     "computation time: {comp_time}\n"
+    #     "avg. completion time: {avg_comp}\n"
+    #     "avg. residence time ratio : {avg_resid}\n"
+    #     "avg. queuing delay: {avg_queue}\n"
+    #     "accum. path cost: {accum_path}\n"
+    #     "avg. path cost: {avg_path}".format(
+    #         makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
+    #         avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
+    #         accum_path=episode.simulation.monitor.accum_path_cost,
+    #         avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
 
 
     # FirstFit deployment with DQN-based migration.
@@ -116,8 +116,8 @@ def main():
             # TODO: if DRL-based deployment is also used.
             deployment_agent = None
             deployment_algorithm = FirstFitAlgorithm()
-            migration_agent = DQNMigrationAgent(DIM_MIG_NN_INPUT, decaying_cnt=cnt)
-            migration_algorithm = DQNMigrationAlgorithm(migration_agent)
+            migration_agent = REINFORCEMigrationAgent(DIM_MIG_NN_INPUT)
+            migration_algorithm = REINFORCEMigrationAlgorithm(migration_agent)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
             episode.run()
 
@@ -132,16 +132,7 @@ def main():
             avg_path_costs.append(np.mean(episode.simulation.monitor.hist_path_costs))
             avg_num_interruptions += len(episode.simulation.mec_net.interrupted_services)
 
-            # Sync the target QNet (DNN) with the main (learning) QNet every episode.
-            migration_agent.update_target_q_function()
-
-            # !찍었을 때 누적 보상이 증가하지는 않음을 확인함
-            # cum_reward_epi = 0
-            # for reward in rewards_epi:
-            #     if reward is not None:
-            #         cum_reward_epi += reward
-            # print(cum_reward_epi)
-
+            migration_agent.train_net()
             cnt += 1
 
         with open("result.txt", 'a') as f:

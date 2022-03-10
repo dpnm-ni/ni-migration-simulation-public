@@ -59,7 +59,7 @@ class Service:
             yield self.env.timeout(self.duration)
             self.finished = True
             self.finished_timestamp = self.env.now
-            log.info("[{}] Service {} finished".format(self.finished_timestamp, self.id))
+            log.debug("[{}] Service {} finished".format(self.finished_timestamp, self.id))
 
             self.machine.stop_service_instance(self)
             log.debug("[{}] Machine state after: {}".format(self.env.now, self.machine.get_state()))

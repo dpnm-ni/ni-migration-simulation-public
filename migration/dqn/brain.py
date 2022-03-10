@@ -1,22 +1,20 @@
 import random
-
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
-
 from migration.dqn.replay_memory import ReplayMemory, Transition
 
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.01
 # replay mem capacity: 10000 (Cartpole), 2500 (도영 DQN)
 BUFFER_CAPACITY = 2500
 # mini-batch sampling size: 32 (Cartpole), 16 (도영)
-BATCH_SIZE = 16
+BATCH_SIZE = 1
 GAMMA = 0.98
 
 

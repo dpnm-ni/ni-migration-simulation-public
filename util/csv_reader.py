@@ -16,8 +16,11 @@ class CSVReader:
         self.service_profiles = []
         for i in range(len(df)):
             row = df.iloc[i]
-            # !note: +1 to avoid edgeDCs[0] as the central DC
+            # Note +1 to avoid placing users at edgeDCs[0] which is the cloud DC.
+            # So resulted user_loc 1~15 correspond to edgeDC[1]~edgeDC[15] (named Edge1~Edge15 in Edgenet.gml).
             user_loc = (row.user_loc.astype(dtype=int) % num_edgeDCs) + 1
+            # FIXME:
+            e2e_latency = 10000 if row.plan_cpu.astype(dtype=int) == 16 else row.e2e_latency.astype(dtype=int)
             self.service_profiles.append(
                 ServiceProfile(row.service_id.astype(dtype=int),
                                row.submit_time.astype(dtype=int),
@@ -26,7 +29,7 @@ class CSVReader:
                                round(Decimal(row.plan_disk), 9),
                                row.duration,
                                user_loc,
-                               row.e2e_latency.astype(dtype=int)))
+                               e2e_latency))
 
         self.service_profiles.sort(key=attrgetter('submit_time'))
 

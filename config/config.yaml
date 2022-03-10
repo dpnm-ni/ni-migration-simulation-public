@@ -15,7 +15,7 @@ leaf_spine_edge:
   num_leaves: 4
   num_fanout: 2
   machine_profile:
-    cpu: 16
+    cpu: 10
     memory: 0.5
     disk: 0.5
 

@@ -10,7 +10,8 @@ class Algorithm(ABC):
         pass
 
     def can_satisfy_e2e_latency(self, mec_net, service, machine):
-        expected_rtt = 2 * mec_net.get_path_cost(service.user_loc, machine.id)
+        # expected_rtt = 2 * mec_net.get_path_cost(service.user_loc, machine.id)
+        expected_rtt = mec_net.get_path_cost(service.user_loc, machine.id)
         if expected_rtt <= service.service_profile.e2e_latency:
             return True
         else:
@@ -56,6 +57,7 @@ class LeastCostAlgorithm(Algorithm):
         for service in waiting_services:
             # Try to deploy a service in its closest/nearest edge DC.
             try:
+                # Note that service.user_loc itself maps its nearest edge DC (id), so their path cost is 0.
                 machine_to_deploy = self.get_first_fit_edgeDC_machine(mec_net, service, service.user_loc, machines)
                 if machine_to_deploy is not None:
                     return machine_to_deploy, service
