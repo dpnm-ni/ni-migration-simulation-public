@@ -26,9 +26,21 @@ class Service:
         self.started_timestamp = None
         self.finished_timestamp = None
 
+        self.num_interruptions_by_fault = 0
+        self.num_interruptions_by_migration = 0
+
     def start_service_instance(self, machine):
         self.started = True
         self.started_timestamp = self.env.now
+
+        self.machine = machine
+        self.machine.run_service_instance(self)
+        self.work_event = self.env.process(self.do_work())
+
+    # Same as start_service_instance but maintain the instance's current session info (e.g., start_time).
+    def start_service_instance_after_migration(self, machine):
+        self.started = True
+        # self.started_timestamp = self.env.now
 
         self.machine = machine
         self.machine.run_service_instance(self)
@@ -49,10 +61,10 @@ class Service:
         self.machine = None
 
         # Step2: start the service instance at dest_machine.
-        # Due to the asynchronous behavior of the interrupt handler, compute the remaining duration here.
+        # Note that the call for the service interrupt is asynchronous, so update the remaining duration here.
         elapsed_time = self.env.now - self.started_timestamp
         self.duration = self.duration - elapsed_time if elapsed_time <= self.duration else 0
-        self.start_service_instance(dest_machine)
+        self.start_service_instance_after_migration(dest_machine)
 
     def do_work(self):
         try:
@@ -68,10 +80,6 @@ class Service:
         except simpy.Interrupt as interrupt:
             # Caused by machine (server) failure.
             if interrupt.cause == 0:
-                # TODO: due to the asynchronous behavior of the interrupt handler, compute the remaining duration at the caller.
-                elapsed_time = self.env.now - self.started_timestamp
-                self.duration = self.duration - elapsed_time if elapsed_time <= self.duration else 0
-
                 self.machine = None
                 # Invalidating this flag ensures that this service gets rescheduled by Scheduler.
                 self.started = False
@@ -80,19 +88,31 @@ class Service:
                 log.info("[{}] Service {} (duration: {}) interrupted. go back to waiting queue".format(
                     self.env.now, self.id, self.duration))
 
+                self.num_interruptions_by_fault += 1
+
             # Caused by live migration.
             elif interrupt.cause == 1:
-                # elapsed_time = self.env.now - self.started_timestamp
-                # self.duration = self.duration - elapsed_time if elapsed_time <= self.duration else 0
-
+                # TODO:
                 log.debug("[{}] live migration penalty".format(self.env.now))
 
-    # TODO: refactor the entire codes to be coherent in handling instance properties
+                self.num_interruptions_by_migration += 1
+
     def is_started(self):
         return self.started
 
     def is_finished(self):
         return self.finished
+
+    # FIXME:
+    def get_service_type(self):
+        if self.service_profile.e2e_latency == 5:
+            return 0
+        elif self.service_profile.e2e_latency == 10:
+            return 1
+        elif self.service_profile.e2e_latency == 50:
+            return 2
+        else:
+            return 3
 
     def __repr__(self):
         return str(self.id)
@@ -102,7 +122,7 @@ class Service:
 # Intended to include only static information when the service request is created (e.g., from csv).
 # It would be better to store runtime information (e.g., user mobility) in Serivce class itself.
 class ServiceProfile:
-    def __init__(self, service_id, submit_time, cpu, memory, disk, duration, user_loc, e2e_latency):
+    def __init__(self, service_id, submit_time, cpu, memory, disk, duration, user_loc, e2e_latency, e2e_availability):
         self.service_id = service_id
         self.submit_time = submit_time
         self.cpu = cpu
@@ -115,3 +135,4 @@ class ServiceProfile:
 
         # A service's constraint for end-to-end latency.
         self.e2e_latency = e2e_latency
+        self.e2e_availability = e2e_availability

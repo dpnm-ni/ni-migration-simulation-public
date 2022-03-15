@@ -1,5 +1,6 @@
 from base_logger import log
 
+INJECTOR_INTERVAL = 5
 DISK_FAULT_THRESHOLD = 9
 
 
@@ -14,7 +15,7 @@ class FaultInjector:
         self.mec_net = simulation.mec_net
 
     def run(self):
-        yield self.env.timeout(5)
+        yield self.env.timeout(INJECTOR_INTERVAL)
         while not self.simulation.is_finished():
             machines = self.mec_net.machines
             for machine in machines:
@@ -25,4 +26,4 @@ class FaultInjector:
                     machine.destroy()
                     machine.mon_disk_overutil_cnt = 0
 
-            yield self.env.timeout(5)
+            yield self.env.timeout(INJECTOR_INTERVAL)

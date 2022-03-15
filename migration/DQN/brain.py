@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical
-from migration.dqn.replay_memory import ReplayMemory, Transition
+from migration.DQN.replay_memory import ReplayMemory, Transition
 
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
@@ -56,6 +56,8 @@ class DQNMigrationBrain:
         # ε-greedy 알고리즘에서 서서히 최적행동의 비중을 늘린다
         epsilon = 0.5 * (1 / (episode + 1))
 
+        # !epsilon = Prob(exploration)
+        # !episode 증가해서 epsilon 작아지면 exploration 비중 줄어들어야 함
         if epsilon <= np.random.uniform(0, 1):
             self.main_q_net.eval()  # 신경망을 추론 모드로 전환
             with torch.no_grad():

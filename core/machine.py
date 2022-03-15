@@ -18,8 +18,13 @@ class Machine:
         self.memory = self.machine_profile.memory
         self.disk = self.machine_profile.disk
 
-        # periodically filled by Monitor
+        # periodically updated by Monitor
+        self.mon_cpu_utilization = 0
+        self.mon_cpu_util_hist = []
+        self.mon_memory_utilization = 0
+        self.mon_memory_util_hist = []
         self.mon_disk_utilization = 0
+        self.mon_disk_util_hist = []
         self.mon_disk_overutil_cnt = 0
 
         self.running_service_instances = []
@@ -33,10 +38,6 @@ class Machine:
     def attach(self, mec_net):
         self.mec_net = mec_net
 
-    # Migrating instanceA from server1 to server2 is simulated by:
-    # if server2.can_accommodate(instanceA)
-    #   server1.stop_service_instance(instanceA)
-    #   server2.run_service_instance(instanceA)
     def run_service_instance(self, service):
         self.cpu -= service.cpu
         assert self.cpu >= 0
@@ -60,7 +61,6 @@ class Machine:
     def can_accommodate(self, service_profile):
         if self.destroyed is True:
             return False
-
         return self.cpu >= service_profile.cpu and \
                self.memory >= service_profile.memory and \
                self.disk >= service_profile.disk
@@ -71,8 +71,13 @@ class Machine:
             # https://simpy.readthedocs.io/en/latest/simpy_intro/process_interaction.html#interrupting-another-process
             # self.env.interrupt(service)
             service.work_event.interrupt(cause=0)
+
+            # Note that the call for the service interrupt is asynchronous, so update the remaining duration here.
+            elapsed_time = service.env.now - service.started_timestamp
+            service.duration = service.duration - elapsed_time if elapsed_time <= service.duration else 0
+
             # self.stop_service_instance(service)
-            self.mec_net.interrupted_services.append(service)
+            # self.mec_net.interrupted_services.append(service)
 
         # !중요: class 간 dependency 때문에(path cost 연산 등) 해당 머신을 topology 자체에서 지우지는 말고 스케쥴링만 배제되도록 임시 설정해놓음
         # self.mec_net.machines.remove(self)

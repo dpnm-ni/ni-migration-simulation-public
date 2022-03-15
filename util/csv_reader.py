@@ -20,7 +20,7 @@ class CSVReader:
             # So resulted user_loc 1~15 correspond to edgeDC[1]~edgeDC[15] (named Edge1~Edge15 in Edgenet.gml).
             user_loc = (row.user_loc.astype(dtype=int) % num_edgeDCs) + 1
             # FIXME:
-            e2e_latency = 10000 if row.plan_cpu.astype(dtype=int) == 16 else row.e2e_latency.astype(dtype=int)
+            e2e_latency = 1000 if row.plan_cpu.astype(dtype=int) == 16 else row.e2e_latency.astype(dtype=int)
             self.service_profiles.append(
                 ServiceProfile(row.service_id.astype(dtype=int),
                                row.submit_time.astype(dtype=int),
@@ -29,7 +29,8 @@ class CSVReader:
                                round(Decimal(row.plan_disk), 9),
                                row.duration,
                                user_loc,
-                               e2e_latency))
+                               e2e_latency,
+                               row.e2e_availability.astype(dtype=float)))
 
         self.service_profiles.sort(key=attrgetter('submit_time'))
 

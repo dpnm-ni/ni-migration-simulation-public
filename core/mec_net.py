@@ -14,7 +14,7 @@ class MECNetwork:
         self.services = []
         self.max_path_cost = 0
         # for debug purpose
-        self.interrupted_services = []
+        # self.interrupted_services = []
 
         # self.topo = self.create_topology("graph/Abilene1.gml")
         # self.topo = self.create_topology("graph/Kreonet1.gml")

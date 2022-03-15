@@ -1,4 +1,4 @@
-from migration.dqn.brain import DQNMigrationBrain
+from migration.DQN.brain import DQNMigrationBrain
 
 
 class DQNMigrationAgent:

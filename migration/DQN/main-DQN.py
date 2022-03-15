@@ -5,8 +5,8 @@ from config import cfg
 from base_logger import log
 from core.algorithm import RandomAlgorithm, FirstFitAlgorithm, LeastCostAlgorithm
 from core.episode import Episode
-from migration.dqn.agent import DQNMigrationAgent
-from migration.dqn.algorithm import DQNMigrationAlgorithm
+from migration.DQN.agent import DQNMigrationAgent
+from migration.DQN.algorithm import DQNMigrationAlgorithm
 from util.csv_reader import CSVReader
 from util.tools import average_completion_time, average_residence_cost, average_queuing_delay
 

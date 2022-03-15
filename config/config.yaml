@@ -6,9 +6,9 @@ mec_net:
 
 simple_edge:
   machine_profile:
-    cpu: 256
-    memory: 10
-    disk: 10
+    cpu: 10000
+    memory: 100
+    disk: 100
 
 leaf_spine_edge:
   num_spines: 2
