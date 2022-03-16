@@ -5,15 +5,16 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
-NUM_NEURONS = 32
+NUM_NEURONS = 64
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.001
 GAMMA = 0.98
 
 
 class REINFORCEMigrationAgent:
-    def __init__(self, dim_mig_nn_input):
+    def __init__(self, dim_mig_nn_input, num_epi):
         self.net = Net(dim_mig_nn_input)
+        self.num_epi = num_epi
         self.data = []
 
     def put_data(self, item):
@@ -34,7 +35,7 @@ class REINFORCEMigrationAgent:
 
     # FIXME: trajectory 정보 main 인자로 넘기지 말고 agent 내부 변수로 처리하도록 수정
     # https://github.com/seungeunrho/minimalRL/blob/master/REINFORCE.py
-    def train_net(self):
+    def train(self):
         R = 0
         self.net.optimizer.zero_grad()
 
@@ -62,5 +63,4 @@ class Net(nn.Module):
         x = F.relu(self.hidden1(x))
         x = F.relu(self.hidden2(x))
         x = F.softmax(self.output(x), dim=0)
-
         return x

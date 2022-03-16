@@ -21,6 +21,8 @@ class DQNv2MigrationController:
         yield self.env.timeout(MIGRATION_TICK_INTERVAL)
         while not self.simulation.is_finished():
             self.make_migration_decision()
+            self.migration_algorithm.agent.train()
+
             yield self.env.timeout(MIGRATION_TICK_INTERVAL)
 
     # Find an optimal placement map between all service instances and their host machines every INTERVAL.
@@ -72,6 +74,6 @@ class DQNv2MigrationController:
             # log.debug("[{}] Destination Machine state after: {}".format(self.env.now, dest_machine.get_state()))
 
             self.migration_algorithm.agent.memorize(state, action, reward, next_state, done_mask=None)
-            self.migration_algorithm.agent.train()
+            # self.migration_algorithm.agent.train()
 
             self.hist_rewards.append(reward)

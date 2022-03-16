@@ -8,8 +8,7 @@ from core.episode import Episode
 from migration.REINFORCE.agent import REINFORCEMigrationAgent
 from migration.REINFORCE.algorithm import REINFORCEMigrationAlgorithm
 from util.csv_reader import CSVReader
-from util.tools import average_completion_time, average_residence_cost, average_queuing_delay
-
+from util.tools import print_result, save_result, write_result
 
 # TODO: 실행 파라미터(topo name) 및 config 파일 이용할 것
 # num_machines = 5 if using test_least_cost.csv
@@ -28,7 +27,7 @@ SERVICE_FILE_LENGTH = 1000
 NUM_ITERATIONS = 100
 NUM_EPISODES = 10
 DIM_DEP_NN_INPUT = 9
-DIM_MIG_NN_INPUT = 8
+DIM_MIG_NN_INPUT = 9
 
 
 # 시뮬레이터 동작 로그 없이 각 알고리즘의 결과만 출력하려면 base_logger의 로그 레벨 INFO로 바꿀 것
@@ -36,109 +35,51 @@ def main():
     # machine_profiles = [MachineProfile(64, 1, 1) for _ in range(NUM_MACHINES)]
     service_profiles = CSVReader(SERVICE_FILE, NUM_EDGE_DC).generate(SERVICE_FILE_OFFSET, SERVICE_FILE_LENGTH)
 
+
     # # Random deployment without migration.
     # tic = time.time()
     # deployment_algorithm = RandomAlgorithm()
     # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
     # episode.run()
-    # log.info(
-    #     "makespan: {makespan}\n"
-    #     "computation time: {comp_time}\n"
-    #     "avg. completion time: {avg_comp}\n"
-    #     "avg. residence time ratio : {avg_resid}\n"
-    #     "avg. queuing delay: {avg_queue}\n"
-    #     "accum. path cost: {accum_path}\n"
-    #     "avg. path cost: {avg_path}".format(
-    #         makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
-    #         avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
-    #         accum_path=episode.simulation.monitor.accum_path_cost,
-    #         avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
+    # print_result(episode, tic)
     #
     # # FirstFit deployment without migration.
     # tic = time.time()
     # deployment_algorithm = FirstFitAlgorithm()
     # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
     # episode.run()
-    # log.info(
-    #     "makespan: {makespan}\n"
-    #     "computation time: {comp_time}\n"
-    #     "avg. completion time: {avg_comp}\n"
-    #     "avg. residence time ratio : {avg_resid}\n"
-    #     "avg. queuing delay: {avg_queue}\n"
-    #     "accum. path cost: {accum_path}\n"
-    #     "avg. path cost: {avg_path}".format(
-    #         makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
-    #         avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
-    #         accum_path=episode.simulation.monitor.accum_path_cost,
-    #         avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
+    # print_result(episode, tic)
     #
     # # LeastCost deployment without migration.
     # tic = time.time()
     # deployment_algorithm = LeastCostAlgorithm()
     # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
     # episode.run()
-    # log.info(
-    #     "makespan: {makespan}\n"
-    #     "computation time: {comp_time}\n"
-    #     "avg. completion time: {avg_comp}\n"
-    #     "avg. residence time ratio : {avg_resid}\n"
-    #     "avg. queuing delay: {avg_queue}\n"
-    #     "accum. path cost: {accum_path}\n"
-    #     "avg. path cost: {avg_path}".format(
-    #         makespan=episode.env.now, comp_time=(time.time() - tic), avg_comp=average_completion_time(episode),
-    #         avg_resid=average_residence_cost(episode), avg_queue=average_queuing_delay(episode),
-    #         accum_path=episode.simulation.monitor.accum_path_cost,
-    #         avg_path=np.mean(episode.simulation.monitor.hist_path_costs)))
+    # print_result(episode, tic)
 
 
     # FirstFit deployment with DQN-based migration.
-    # !체크리스트
-    # !1차: LeastCost deployment에 필적하는 성능
-    # !2차: 고장 상황 시에 LeastCost deployment 보다 향상된 성능
     cnt = 0
     for itr in range(NUM_ITERATIONS):
         log.debug("\n********** Iteration{} ************".format(itr))
-
-        # Performance metrics that are updated every iteration.
-        makespans = list([])
-        computation_times = list([])
-        avg_completion_times = list([])
-        avg_residence_times = list([])
-        avg_queuing_delays = list([])
-        accum_path_costs = list([])
-        avg_path_costs = list([])
-        # !disk_overutil 리워드 1일 때가 0.5, 0보다 interruption 개수 크게 나옴...이상한데 failure 랜덤성 때문인가?
-        avg_num_interruptions = 0
-
         for epi in range(NUM_EPISODES):
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
-            tic = time.time()
+            start_time = time.time()
             # TODO: if DRL-based deployment is also used.
             deployment_agent = None
             deployment_algorithm = FirstFitAlgorithm()
-            migration_agent = REINFORCEMigrationAgent(DIM_MIG_NN_INPUT)
+            migration_agent = REINFORCEMigrationAgent(DIM_MIG_NN_INPUT, num_epi=cnt)
             migration_algorithm = REINFORCEMigrationAlgorithm(migration_agent)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
             episode.run()
 
             # Fill the performance measurements at the end of one episode.
-            makespans.append(episode.simulation.env.now)
-            computation_times.append(time.time() - tic)
-            avg_completion_times.append(average_completion_time(episode))
-            avg_residence_times.append(average_residence_cost(episode))
-            avg_queuing_delays.append(average_queuing_delay(episode))
-            # FIXME: compute at utils like other metric.
-            accum_path_costs.append(episode.simulation.monitor.accum_path_cost)
-            avg_path_costs.append(np.mean(episode.simulation.monitor.hist_path_costs))
-            avg_num_interruptions += len(episode.simulation.mec_net.interrupted_services)
+            save_result(episode, start_time)
 
-            migration_agent.train_net()
+            # migration_agent.train()
             cnt += 1
 
-        with open("result.txt", 'a') as f:
-            print(np.mean(makespans), np.mean(computation_times),
-                  np.mean(avg_completion_times), np.mean(avg_residence_times), np.mean(avg_queuing_delays),
-                  np.mean(accum_path_costs), np.mean(avg_path_costs), np.mean(avg_num_interruptions), file=f)
+        write_result()
 
 
 

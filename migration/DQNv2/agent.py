@@ -33,7 +33,7 @@ class DQNv2MigrationAgent:
 
     def get_action(self, state):
         # Linear annealing from 10% to 1%.
-        epsilon = max(0.01, 0.1 - 0.01*(self.num_epi/100))
+        epsilon = max(0.01, 0.1 - 0.01*(self.num_epi/10))
 
         # coin = random.random()
         coin = np.random.uniform(0, 1)
