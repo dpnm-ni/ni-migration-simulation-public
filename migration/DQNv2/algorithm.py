@@ -9,8 +9,10 @@ from decimal import Decimal
 
 
 class DQNv2MigrationAlgorithm(Algorithm):
-    def __init__(self, agent, reward_giver=None):
+    def __init__(self, agent, num_epi, reward_giver=None):
         self.agent = agent
+        # Set agent's num_epi for decaying epsilon.
+        self.agent.num_epi = num_epi
         self.reward_giver = reward_giver
 
         # Valid at the current state only. Should be initialized before the next state.
@@ -95,7 +97,7 @@ class DQNv2MigrationAlgorithm(Algorithm):
             else 1 / (service.service_profile.e2e_latency - path_cost + 1)
 
         # REWARD = 0.5 * reward_service_latency + 0.5 * reward_service_type
-        REWARD = 1 / (reward_service_latency + (1 - reward_service_type) + 1e-1)
+        REWARD = 1 / ((1 - reward_service_latency) + (1 - reward_service_type) + 1e-1)
 
         # return dest_machine, action, torch.FloatTensor([REWARD])
         return dest_machine, action, REWARD

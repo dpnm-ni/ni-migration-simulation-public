@@ -24,8 +24,8 @@ SERVICE_FILE_OFFSET = 0
 SERVICE_FILE_LENGTH = 1000
 
 # RL config
-NUM_ITERATIONS = 100
-NUM_EPISODES = 10
+NUM_ITERATIONS = 1000
+NUM_EPISODES = 1
 DIM_DEP_NN_INPUT = 9
 DIM_MIG_NN_INPUT = 9
 
@@ -36,50 +36,50 @@ def main():
     service_profiles = CSVReader(SERVICE_FILE, NUM_EDGE_DC).generate(SERVICE_FILE_OFFSET, SERVICE_FILE_LENGTH)
 
 
-    # # Random deployment without migration.
-    # tic = time.time()
-    # deployment_algorithm = RandomAlgorithm()
-    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    # episode.run()
-    # print_result(episode, tic)
+    # Random deployment without migration.
+    tic = time.time()
+    deployment_algorithm = RandomAlgorithm()
+    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    episode.run()
+    print_result(episode, tic)
+
+    # FirstFit deployment without migration.
+    tic = time.time()
+    deployment_algorithm = FirstFitAlgorithm()
+    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    episode.run()
+    print_result(episode, tic)
+
+    # LeastCost deployment without migration.
+    tic = time.time()
+    deployment_algorithm = LeastCostAlgorithm()
+    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    episode.run()
+    print_result(episode, tic)
+
+
+    # # FirstFit deployment with DQN-based migration.
+    # cnt = 0
+    # # TODO: if DRL-based deployment is also used.
+    # deployment_agent = None
+    # migration_agent = REINFORCEMigrationAgent(DIM_MIG_NN_INPUT)
+    # for itr in range(NUM_ITERATIONS):
+    #     log.debug("\n********** Iteration{} ************".format(itr))
+    #     for epi in range(NUM_EPISODES):
+    #         log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
+    #         start_time = time.time()
+    #         deployment_algorithm = FirstFitAlgorithm()
+    #         migration_algorithm = REINFORCEMigrationAlgorithm(migration_agent, num_epi=cnt)
+    #         episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
+    #         episode.run()
     #
-    # # FirstFit deployment without migration.
-    # tic = time.time()
-    # deployment_algorithm = FirstFitAlgorithm()
-    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    # episode.run()
-    # print_result(episode, tic)
+    #         # Fill the performance measurements at the end of one episode.
+    #         save_result(episode, start_time)
     #
-    # # LeastCost deployment without migration.
-    # tic = time.time()
-    # deployment_algorithm = LeastCostAlgorithm()
-    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    # episode.run()
-    # print_result(episode, tic)
-
-
-    # FirstFit deployment with DQN-based migration.
-    cnt = 0
-    for itr in range(NUM_ITERATIONS):
-        log.debug("\n********** Iteration{} ************".format(itr))
-        for epi in range(NUM_EPISODES):
-            log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
-            start_time = time.time()
-            # TODO: if DRL-based deployment is also used.
-            deployment_agent = None
-            deployment_algorithm = FirstFitAlgorithm()
-            migration_agent = REINFORCEMigrationAgent(DIM_MIG_NN_INPUT, num_epi=cnt)
-            migration_algorithm = REINFORCEMigrationAlgorithm(migration_agent)
-            episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
-            episode.run()
-
-            # Fill the performance measurements at the end of one episode.
-            save_result(episode, start_time)
-
-            # migration_agent.train()
-            cnt += 1
-
-        write_result()
+    #         migration_agent.train()
+    #         cnt += 1
+    #
+    #     write_result()
 
 
 

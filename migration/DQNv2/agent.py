@@ -22,13 +22,13 @@ GAMMA = 0.98
 
 
 class DQNv2MigrationAgent:
-    def __init__(self, dim_mig_nn_input, num_epi):
+    def __init__(self, dim_mig_nn_input):
         self.q_net = Net(dim_mig_nn_input)
         self.optimizer = optim.Adam(self.q_net.parameters(), lr=LEARNING_RATE)
         self.target_q_net = Net(dim_mig_nn_input)
         self.update_target_q_function()
 
-        self.num_epi = num_epi
+        self.num_epi = 0
         self.memory = ReplayBuffer()
 
     def get_action(self, state):

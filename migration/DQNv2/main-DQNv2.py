@@ -58,29 +58,29 @@ def main():
     print_result(episode, tic)
 
 
-    # # FirstFit deployment with DQN-based migration.
-    # cnt = 0
-    # for itr in range(NUM_ITERATIONS):
-    #     log.debug("\n********** Iteration{} ************".format(itr))
-    #     for epi in range(NUM_EPISODES):
-    #         log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
-    #         start_time = time.time()
-    #         # TODO: if DRL-based deployment is also used.
-    #         deployment_agent = None
-    #         deployment_algorithm = FirstFitAlgorithm()
-    #         migration_agent = DQNv2MigrationAgent(DIM_MIG_NN_INPUT, num_epi=cnt)
-    #         migration_algorithm = DQNv2MigrationAlgorithm(migration_agent)
-    #         episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
-    #         episode.run()
-    #
-    #         # Fill the performance measurements at the end of one episode.
-    #         save_result(episode, start_time)
-    #
-    #         # Sync the target QNet (DNN) with the main (learning) QNet every episode.
-    #         migration_agent.update_target_q_function()
-    #         cnt += 1
-    #
-    #     write_result()
+    # FirstFit deployment with DQN-based migration.
+    cnt = 0
+    # TODO: if DRL-based deployment is also used.
+    deployment_agent = None
+    migration_agent = DQNv2MigrationAgent(DIM_MIG_NN_INPUT)
+    for itr in range(NUM_ITERATIONS):
+        log.debug("\n********** Iteration{} ************".format(itr))
+        for epi in range(NUM_EPISODES):
+            log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
+            start_time = time.time()
+            deployment_algorithm = FirstFitAlgorithm()
+            migration_algorithm = DQNv2MigrationAlgorithm(migration_agent, num_epi=cnt)
+            episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
+            episode.run()
+
+            # Fill the performance measurements at the end of one episode.
+            save_result(episode, start_time)
+
+            # Sync the target QNet (DNN) with the main (learning) QNet every episode.
+            migration_agent.update_target_q_function()
+            cnt += 1
+
+        write_result()
 
 
 

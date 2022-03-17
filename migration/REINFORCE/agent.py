@@ -12,9 +12,9 @@ GAMMA = 0.98
 
 
 class REINFORCEMigrationAgent:
-    def __init__(self, dim_mig_nn_input, num_epi):
+    def __init__(self, dim_mig_nn_input):
         self.net = Net(dim_mig_nn_input)
-        self.num_epi = num_epi
+        self.num_epi = 0
         self.data = []
 
     def put_data(self, item):
@@ -33,8 +33,6 @@ class REINFORCEMigrationAgent:
         # Action: migrate s_i from s_i.machine to m_j.
         return pair_index, fitness_values[pair_index]
 
-    # FIXME: trajectory 정보 main 인자로 넘기지 말고 agent 내부 변수로 처리하도록 수정
-    # https://github.com/seungeunrho/minimalRL/blob/master/REINFORCE.py
     def train(self):
         R = 0
         self.net.optimizer.zero_grad()
