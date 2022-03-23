@@ -24,8 +24,8 @@ SERVICE_FILE_OFFSET = 0
 SERVICE_FILE_LENGTH = 1000
 
 # RL config
-NUM_ITERATIONS = 100
-NUM_EPISODES = 10
+NUM_ITERATIONS = 1000
+NUM_EPISODES = 1
 DIM_DEP_NN_INPUT = 9
 DIM_MIG_NN_INPUT = 9
 
@@ -36,26 +36,26 @@ def main():
     service_profiles = CSVReader(SERVICE_FILE, NUM_EDGE_DC).generate(SERVICE_FILE_OFFSET, SERVICE_FILE_LENGTH)
 
 
-    # Random deployment without migration.
-    tic = time.time()
-    deployment_algorithm = RandomAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    print_result(episode, tic)
-
-    # FirstFit deployment without migration.
-    tic = time.time()
-    deployment_algorithm = FirstFitAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    print_result(episode, tic)
-
-    # LeastCost deployment without migration.
-    tic = time.time()
-    deployment_algorithm = LeastCostAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    print_result(episode, tic)
+    # # Random deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = RandomAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # print_result(episode, tic)
+    #
+    # # FirstFit deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = FirstFitAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # print_result(episode, tic)
+    #
+    # # LeastCost deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = LeastCostAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # print_result(episode, tic)
 
 
     # FirstFit deployment with DQN-based migration.

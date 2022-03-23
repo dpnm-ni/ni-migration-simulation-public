@@ -26,8 +26,8 @@ SERVICE_FILE_LENGTH = 1000
 # RL config
 NUM_ITERATIONS = 1000
 NUM_EPISODES = 1
-DIM_DEP_NN_INPUT = 9
-DIM_MIG_NN_INPUT = 9
+# DIM_DEP_NN_INPUT = 9
+DIM_MIG_NN_INPUT = 10
 
 
 # 시뮬레이터 동작 로그 없이 각 알고리즘의 결과만 출력하려면 base_logger의 로그 레벨 INFO로 바꿀 것
@@ -36,50 +36,70 @@ def main():
     service_profiles = CSVReader(SERVICE_FILE, NUM_EDGE_DC).generate(SERVICE_FILE_OFFSET, SERVICE_FILE_LENGTH)
 
 
-    # Random deployment without migration.
-    tic = time.time()
-    deployment_algorithm = RandomAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    print_result(episode, tic)
-
-    # FirstFit deployment without migration.
-    tic = time.time()
-    deployment_algorithm = FirstFitAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    print_result(episode, tic)
-
-    # LeastCost deployment without migration.
-    tic = time.time()
-    deployment_algorithm = LeastCostAlgorithm()
-    episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
-    episode.run()
-    print_result(episode, tic)
-
-
-    # # FirstFit deployment with DQN-based migration.
-    # cnt = 0
-    # # TODO: if DRL-based deployment is also used.
-    # deployment_agent = None
-    # migration_agent = REINFORCEMigrationAgent(DIM_MIG_NN_INPUT)
-    # for itr in range(NUM_ITERATIONS):
-    #     log.debug("\n********** Iteration{} ************".format(itr))
-    #     for epi in range(NUM_EPISODES):
-    #         log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
-    #         start_time = time.time()
-    #         deployment_algorithm = FirstFitAlgorithm()
-    #         migration_algorithm = REINFORCEMigrationAlgorithm(migration_agent, num_epi=cnt)
-    #         episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
-    #         episode.run()
+    # # Random deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = RandomAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # print_result(episode, tic)
     #
-    #         # Fill the performance measurements at the end of one episode.
-    #         save_result(episode, start_time)
+    # # FirstFit deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = FirstFitAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # print_result(episode, tic)
     #
-    #         migration_agent.train()
-    #         cnt += 1
-    #
-    #     write_result()
+    # # LeastCost deployment without migration.
+    # tic = time.time()
+    # deployment_algorithm = LeastCostAlgorithm()
+    # episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm=None)
+    # episode.run()
+    # print_result(episode, tic)
+
+
+    # Baseline deployment + REINFORCE-based migration.
+    cnt = 0
+    # TODO: if DRL-based deployment is also used.
+    deployment_agent = None
+    migration_agent = REINFORCEMigrationAgent(DIM_MIG_NN_INPUT)
+    for itr in range(NUM_ITERATIONS):
+        log.debug("\n********** Iteration{} ************".format(itr))
+        for epi in range(NUM_EPISODES):
+            log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
+            start_time = time.time()
+            deployment_algorithm = LeastCostAlgorithm()
+            migration_algorithm = REINFORCEMigrationAlgorithm(migration_agent, num_epi=cnt)
+            episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
+            episode.run()
+
+            # Train/update the target DNN at the end of one episode.
+            migration_agent.train()
+
+            # Fill the performance measurements at the end of one episode.
+            save_result(episode, start_time)
+            cnt += 1
+
+            # For debug.
+            # with open("rewards_epi.txt", 'a') as f:
+            #     print(str(np.min(migration_algorithm.hist_reward_lat)) + ", " +
+            #           str(np.max(migration_algorithm.hist_reward_lat)) + ", " +
+            #           str(np.mean(migration_algorithm.hist_reward_lat)) + ", " +
+            #           str(np.std(migration_algorithm.hist_reward_lat)) + ", " +
+            #           str(np.min(migration_algorithm.hist_reward_avail)) + ", " +
+            #           str(np.max(migration_algorithm.hist_reward_avail)) + ", " +
+            #           str(np.mean(migration_algorithm.hist_reward_avail)) + ", " +
+            #           str(np.std(migration_algorithm.hist_reward_avail)) + ", " +
+            #           str(np.min(migration_algorithm.hist_reward_type)) + ", " +
+            #           str(np.max(migration_algorithm.hist_reward_type)) + ", " +
+            #           str(np.mean(migration_algorithm.hist_reward_type)) + ", " +
+            #           str(np.std(migration_algorithm.hist_reward_type)) + ", " +
+            #           str(np.min(migration_algorithm.hist_total_reward)) + ", " +
+            #           str(np.max(migration_algorithm.hist_total_reward)) + ", " +
+            #           str(np.mean(migration_algorithm.hist_total_reward)) + ", " +
+            #           str(np.std(migration_algorithm.hist_total_reward)), file=f)
+
+        write_result()
 
 
 

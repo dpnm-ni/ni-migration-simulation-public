@@ -1,7 +1,7 @@
 from base_logger import log
 
 INJECTOR_INTERVAL = 5
-DISK_FAULT_THRESHOLD = 9
+DISK_FAULT_THRESHOLD = 2
 
 
 class FaultInjector:

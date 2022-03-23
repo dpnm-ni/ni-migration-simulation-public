@@ -16,7 +16,7 @@ class CSVReader:
         self.service_profiles = []
         for i in range(len(df)):
             row = df.iloc[i]
-            # Note +1 to avoid placing users at edgeDCs[0] which is the cloud DC.
+            # Note +1 to avoid placing users/services at edgeDCs[0] which is the cloud DC.
             # So resulted user_loc 1~15 correspond to edgeDC[1]~edgeDC[15] (named Edge1~Edge15 in Edgenet.gml).
             user_loc = (row.user_loc.astype(dtype=int) % num_edgeDCs) + 1
             # FIXME:

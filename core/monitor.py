@@ -1,8 +1,9 @@
 from base_logger import log
 
 MONITOR_INTERVAL = 5
-DISK_OVERUTIL_THRESHOLD = 0.8
+DISK_OVERUTIL_THRESHOLD = 0.9
 NUM_SERVICE_TYPES = 4
+
 
 class SLAMonitor:
     def __init__(self, env):
@@ -56,8 +57,8 @@ class SLAMonitor:
             if machine.mon_disk_utilization >= DISK_OVERUTIL_THRESHOLD:
                 machine.mon_disk_overutil_cnt += 1
                 if machine.mon_disk_overutil_cnt > 1:
-                    log.info("[{}] Machine {}'s disk is under over-utilization {}".format(
-                        self.env.now, machine.id, machine.mon_disk_overutil_cnt))
+                    log.info("[{}] Machine {} at Edge {} is under disk over-utilization {}".format(
+                        self.env.now, machine.id, machine.machine_profile.edgeDC_id, machine.mon_disk_overutil_cnt))
             # Initialize the counter if not consecutive.
             else:
                 machine.mon_disk_overutil_cnt = 0

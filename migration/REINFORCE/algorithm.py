@@ -14,12 +14,25 @@ class REINFORCEMigrationAlgorithm(Algorithm):
         self.current_batch = None
         self.state = None
 
+        # For debug.
+        self.hist_reward_lat = []
+        self.hist_reward_avail = []
+        self.hist_reward_type = []
+        self.hist_total_reward = []
+
     def make_input_batch(self, mec_net):
         batch = []
         for machine, service in self.current_machine_service_pairs:
+            # feature_vector = [mec_net.get_path_cost(source_id=service.user_loc, dest_id=machine.id)] \
+            #                  + [machine.cpu, machine.memory, machine.disk] \
+            #                  + [machine.mon_disk_utilization, machine.mon_disk_overutil_cnt] \
+            #                  + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk,
+            #                     service.service_profile.duration, service.service_profile.e2e_latency]
             feature_vector = [mec_net.get_path_cost(source_id=service.user_loc, dest_id=machine.id)] \
                              + [machine.cpu, machine.memory, machine.disk] \
-                             + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk,
+                             + [machine.mon_disk_utilization] \
+                             + [service.service_profile.cpu, service.service_profile.memory,
+                                service.service_profile.disk,
                                 service.service_profile.duration, service.service_profile.e2e_latency]
 
             batch.append(feature_vector)
@@ -38,15 +51,23 @@ class REINFORCEMigrationAlgorithm(Algorithm):
 
         reward_service_latency = 1 / (path_cost + 1)
 
-        # failure_score = self.current_batch[action][...]
-        # reward_service_availability = 1 - failure_score
+        # failure_score = self.current_batch[action][5]
+        failure_score = self.current_batch[action][4]
+        reward_service_availability = 1 / (failure_score + 1)
 
         reward_service_type = 1 \
             if service.get_service_type() == 3 and dest_machine.id == 0 \
             else 1 / (service.service_profile.e2e_latency - path_cost + 1)
+        # reward_service_type = 1 / (service.service_profile.e2e_latency - path_cost + 1)
 
         # REWARD = 0.5 * reward_service_latency + 0.5 * reward_service_type
-        REWARD = 1 / ((1 - reward_service_latency) + (1 - reward_service_type) + 1e-1)
+        REWARD = 1 / ((1 - reward_service_latency) + (1 - reward_service_type) + (1 - reward_service_availability) + 1e-1)
+
+        # For debug.
+        self.hist_reward_lat.append(reward_service_latency)
+        self.hist_reward_avail.append(reward_service_availability)
+        self.hist_reward_type.append(reward_service_type)
+        self.hist_total_reward.append(REWARD)
 
         return dest_machine, prob_action, REWARD
 
@@ -54,7 +75,7 @@ class REINFORCEMigrationAlgorithm(Algorithm):
         # Construct valid (M, s_i) pairs.
         machine_service_pairs = []
         for machine in mec_net.machines:
-            if self.can_satisfy_e2e_latency(mec_net, service, machine):
+            # if self.can_satisfy_e2e_latency(mec_net, service, machine):
                 if machine.can_accommodate(service.service_profile):
                     machine_service_pairs.append((machine, service))
 

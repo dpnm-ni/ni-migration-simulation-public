@@ -1,7 +1,7 @@
 from base_logger import log
 
 # 1/3/5/10/... 각 경우에 성능 평가할 것
-MIGRATION_INTERVAL = 5
+MIGRATION_INTERVAL = 60
 
 
 class REINFORCEMigrationController:
@@ -25,7 +25,7 @@ class REINFORCEMigrationController:
 
             yield self.env.timeout(MIGRATION_INTERVAL)
 
-    # Find an optimal placement map between all service instances and their host machines every INTERVAL.
+    # Find an optimal placement map between all service instances and their SLA-compliant hosts every INTERVAL.
     def make_migration_decision(self):
         running_services = self.mec_net.get_unfinished_services()
         for i in range(len(running_services)):

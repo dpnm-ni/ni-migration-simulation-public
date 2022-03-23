@@ -5,9 +5,9 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
-NUM_NEURONS = 64
+NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.01
 GAMMA = 0.98
 
 
