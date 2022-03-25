@@ -7,6 +7,8 @@ from core.broker import Broker
 from core.simulation import Simulation
 from core.monitor import SLAMonitor
 from core.injector import FaultInjector
+from migration.AC.algorithm import ActorCriticMigrationAlgorithm
+from migration.AC.mig_controller import ActorCriticMigrationController
 from migration.DQNv2.algorithm import DQNv2MigrationAlgorithm
 from migration.DQNv2.mig_controller import DQNv2MigrationController
 from migration.REINFORCE.algorithm import REINFORCEMigrationAlgorithm
@@ -37,6 +39,8 @@ class Episode:
             mig_controller = DQNv2MigrationController(self.env, migration_algorithm)
         elif isinstance(migration_algorithm, REINFORCEMigrationAlgorithm):
             mig_controller = REINFORCEMigrationController(self.env, migration_algorithm)
+        elif isinstance(migration_algorithm, ActorCriticMigrationAlgorithm):
+            mig_controller = ActorCriticMigrationController(self.env, migration_algorithm)
         else:
             mig_controller = None
 

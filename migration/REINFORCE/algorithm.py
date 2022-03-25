@@ -75,7 +75,7 @@ class REINFORCEMigrationAlgorithm(Algorithm):
         # Construct valid (M, s_i) pairs.
         machine_service_pairs = []
         for machine in mec_net.machines:
-            # if self.can_satisfy_e2e_latency(mec_net, service, machine):
+            if self.can_satisfy_e2e_latency(mec_net, service, machine):
                 if machine.can_accommodate(service.service_profile):
                     machine_service_pairs.append((machine, service))
 
