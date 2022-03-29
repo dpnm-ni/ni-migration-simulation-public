@@ -7,7 +7,9 @@ from torch.distributions import Categorical
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.0001
+# https://www.reddit.com/r/MachineLearning/comments/3n8g28/gradient_clipping_what_are_good_values_to_clip_at/
+CLIPPING_NORM = 1
 GAMMA = 0.98
 
 
@@ -26,17 +28,18 @@ class ActorCriticMigrationAgent:
         for transition in self.data:
             s, a, r, s_prime, done_mask = transition
             s_lst.append(s)
-            # a_lst.append([a])
             a_lst.append(a)
             # TODO: may scale reward for learning performance.
             r_lst.append([r])
             s_prime_lst.append(s_prime)
             done_mask_lst.append([done_mask])
 
-        s_batch, a_batch, r_batch, s_prime_batch, done_batch = \
-            torch.tensor(s_lst, dtype=torch.float), torch.tensor(a_lst), \
-            torch.tensor(r_lst, dtype=torch.float), torch.tensor(s_prime_lst, dtype=torch.float), \
-            torch.tensor(done_mask_lst, dtype=torch.float)
+        # s_batch, a_batch, r_batch, s_prime_batch = \
+        #     torch.cat(s_lst), torch.cat(a_lst), torch.tensor(r_lst).transpose(1, 0), torch.cat(s_prime_lst)
+        s_batch = torch.cat(s_lst)
+        a_batch = torch.cat(a_lst)
+        r_batch = torch.tensor(r_lst).transpose(1, 0)
+        s_prime_batch = torch.cat(s_prime_lst)
 
         self.data = []
         return s_batch, a_batch, r_batch, s_prime_batch
@@ -66,12 +69,18 @@ class ActorCriticMigrationAgent:
         delta = td_target - self.net.v(s)
 
         pi = self.net.pi(s)
-        # pi_a = pi.gather(1, a)
-        pi_a = pi.gather(0, a)
-        loss = -torch.log(pi_a) * delta.detach() + F.smooth_l1_loss(self.net.v(s), td_target.detach())
+        pi_a = pi.gather(1, a)
+        # loss = -torch.log(pi_a) * delta.detach() + F.smooth_l1_loss(self.net.v(s), td_target.detach())
+        pi_utilization_func = -torch.log(pi_a) * delta.detach()
+        v_loss_func = F.smooth_l1_loss(self.net.v(s), td_target.detach())
+        loss = pi_utilization_func + v_loss_func
 
         self.net.optimizer.zero_grad()
         loss.mean().backward()
+        # Gradient clipping to avoid nan loss.
+        # https://discuss.pytorch.org/t/nan-loss-coming-after-some-time/11568
+        # https://kh-kim.gitbook.io/natural-language-processing-with-pytorch/00-cover-6/05-gradient-clipping
+        # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=CLIPPING_NORM)
         self.net.optimizer.step()
 
 

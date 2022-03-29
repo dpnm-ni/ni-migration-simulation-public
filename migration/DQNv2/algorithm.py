@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from sklearn.preprocessing import MinMaxScaler
 from torch.distributions import Categorical
 from core.algorithm import Algorithm
 from core.injector import DISK_FAULT_THRESHOLD

@@ -68,13 +68,10 @@ def main():
         for epi in range(NUM_EPISODES):
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
             start_time = time.time()
-            deployment_algorithm = LeastCostAlgorithm()
+            deployment_algorithm = FirstFitAlgorithm()
             migration_algorithm = ActorCriticMigrationAlgorithm(migration_agent, num_epi=cnt)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
             episode.run()
-
-            # Train/update the target DNN at the end of one episode.
-            migration_agent.train()
 
             # Fill the performance measurements at the end of one episode.
             save_result(episode, start_time)

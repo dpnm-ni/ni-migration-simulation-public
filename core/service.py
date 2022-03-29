@@ -1,6 +1,8 @@
 import simpy
 from base_logger import log
 
+SERVICE_DOWNTIME_CONSTANT = 1
+
 
 class Service:
     def __init__(self, env, service_profile):
@@ -29,6 +31,14 @@ class Service:
         self.num_interruptions_by_fault = 0
         self.num_interruptions_by_migration = 0
 
+        # FIXME: refine the locking mechanism to represent migration performance depending on services
+        # Lock should be taken when migration is ongoing and released after migration is done.
+        self.migrating = False
+
+        # Live migration service downtime related.
+        self.hist_service_downtimes = []
+        self.accum_service_downtime = 0
+
     def start_service_instance(self, machine):
         self.started = True
         self.started_timestamp = self.env.now
@@ -50,9 +60,12 @@ class Service:
         assert self.started is True and self.finished is False
         assert self.machine == src_machine
 
+        # Take the migration lock.
+        self.migrating = True
+
         # Here start the live migration operation and generate related costs (total mig time + service downtime + @).
         # Note that SimPy does not wake up the interrupt handler synchronously.
-        # So you expect the internal logic of the handler is executed after the end of this function.
+        # So you expect the internal logic of the interrupt handler is executed after the end of this function.
         self.work_event.interrupt(cause=1)
 
         # In general, VM live migration in real world does Step2 first then Step1 at the end of image transmission.
@@ -68,6 +81,9 @@ class Service:
 
     def do_work(self):
         try:
+            # Release the migration lock.
+            self.migrating = False
+
             yield self.env.timeout(self.duration)
             self.finished = True
             self.finished_timestamp = self.env.now
@@ -95,7 +111,26 @@ class Service:
                 # TODO:
                 log.debug("[{}] live migration penalty".format(self.env.now))
 
+                service_downtime = self.compute_service_downtime()
+                self.hist_service_downtimes.append(service_downtime)
+                self.accum_service_downtime += service_downtime
+
                 self.num_interruptions_by_migration += 1
+
+    def compute_service_downtime(self):
+        memory_intensity = float(self.service_profile.memory) / self.service_profile.duration
+        service_downtime = memory_intensity * SERVICE_DOWNTIME_CONSTANT
+        return service_downtime
+
+    def can_allow_availability(self):
+        service_downtime = self.compute_service_downtime()
+        if self.service_profile.e2e_availability == 0:
+            return True
+        else:
+            availability = (1 - ((self.accum_service_downtime + service_downtime) / self.duration)) * 100
+            if availability >= self.service_profile.e2e_availability:
+                return True
+            return False
 
     def is_started(self):
         return self.started
