@@ -70,6 +70,7 @@ class ActorCriticMigrationAgent:
 
         pi = self.net.pi(s)
         pi_a = pi.gather(1, a)
+        # pi_a = pi.gather(0, a)
         # loss = -torch.log(pi_a) * delta.detach() + F.smooth_l1_loss(self.net.v(s), td_target.detach())
         pi_utilization_func = -torch.log(pi_a) * delta.detach()
         v_loss_func = F.smooth_l1_loss(self.net.v(s), td_target.detach())

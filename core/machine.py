@@ -65,6 +65,18 @@ class Machine:
                self.memory >= service_profile.memory and \
                self.disk >= service_profile.disk
 
+    def compute_failure_score(self, hist_window_size=5):
+        hist_window_size = min(hist_window_size, len(self.mon_disk_util_hist))
+        index = len(self.mon_disk_util_hist) - 1
+        cnt = 0
+        sum = 0
+        while cnt < hist_window_size:
+            sum += float(self.mon_disk_util_hist[index])
+            index -= 1
+            cnt += 1
+        return sum / hist_window_size
+
+
     def destroy(self):
         services = self.running_service_instances
         for service in services:

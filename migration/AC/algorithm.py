@@ -55,6 +55,12 @@ class ActorCriticMigrationAlgorithm(Algorithm):
             sum_latency += mec_net.get_path_cost(service.user_loc, service.machine.id)
         avg_latency_before = sum_latency / len(placement_map.keys())
 
+        # Step 1-3: compute the average failure score of migration source machines.
+        sum_machine_failure_score = 0
+        for service in placement_map.keys():
+            sum_machine_failure_score += service.machine.compute_failure_score(hist_window_size=5)
+        avg_machine_failure_score_before = sum_machine_failure_score / len(placement_map.keys())
+
         # Step 2: create an input batch for DNN.
         batch = self.make_batch(placement_map, mec_net)
 
@@ -89,18 +95,6 @@ class ActorCriticMigrationAlgorithm(Algorithm):
                 log.debug("Service {} stays in the current M{}@E{}".format(
                     service.id, src_machine, src_machine.machine_profile.edgeDC_id))
 
-        # FIXME: merged with Step 5
-        # # Step 6: apply the final migration actions to the environment.
-        # for i, service in zip(range(len(destination_machines)), placement_map.keys()):
-        #     src_machine = service.machine
-        #     dest_machine = destination_machines[i]
-        #     if src_machine.id != dest_machine.id:
-        #         service.live_migrate_service_instance(src_machine, dest_machine)
-        #     else:
-        #         # log.debug("[{}] Service {} stays in the current M{}@E{}".format(
-        #         #     self.agent.env.now, service.id, src_machine, src_machine.machine_profile.edgeDC_id))
-        #         log.debug("Service {} stays in the current M{}@E{}".format(
-        #             service.id, src_machine, src_machine.machine_profile.edgeDC_id))
 
         # Step 7: get the next state.
         batch = self.make_batch(placement_map, mec_net)
@@ -113,11 +107,28 @@ class ActorCriticMigrationAlgorithm(Algorithm):
             sum_latency += mec_net.get_path_cost(service.user_loc, service.machine.id)
         avg_latency_after = sum_latency / len(placement_map.keys())
 
-        # Step 8-2: compute performance benefits after migration.
-        L_gains = avg_latency_before - avg_latency_after
-        reward = L_gains
+        # Step 8-2: compute the average failure score of migration destination machines.
+        sum_machine_failure_score = 0
+        for machine in destination_machines:
+            sum_machine_failure_score += machine.compute_failure_score(hist_window_size=5)
+        avg_machine_failure_score_after = sum_machine_failure_score / len(destination_machines)
+
+        # Step 8-3: compute performance benefits after migration.
+        # L_gains = avg_latency_before - avg_latency_after
+        # L_gains = (avg_latency_before - avg_latency_after) / (avg_latency_before + 1e-5)
+        if avg_latency_before == 0:
+            L_gains = 0
+        else:
+            L_gains = (avg_latency_before - avg_latency_after) / avg_latency_before
+        # A_gains = avg_machine_failure_score_before - avg_machine_failure_score_after
+        # A_gains = (avg_machine_failure_score_before - avg_machine_failure_score_after) / (avg_machine_failure_score_before + 1e-5)
+        if avg_machine_failure_score_before == 0:
+            A_gains = 0
+        else:
+            A_gains = (avg_machine_failure_score_before - avg_machine_failure_score_after) / avg_machine_failure_score_before
+        reward = L_gains + A_gains
 
         # Step 9: return the transition (s, a, r, s').
         # return state, selected_machines, reward, next_state
-        action = torch.from_numpy(np.array([machine.id for machine in destination_machines]).astype(int)).view([-1, 1, 1])
+        action = torch.from_numpy(np.array([machine.id for machine in destination_machines]).astype(np.int64)).view([-1, 1, 1])
         return state, action, reward, next_state
