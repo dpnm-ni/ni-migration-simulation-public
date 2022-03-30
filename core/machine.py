@@ -66,6 +66,10 @@ class Machine:
                self.disk >= service_profile.disk
 
     def compute_failure_score(self, hist_window_size=5):
+        # Assume that failure does not happen to the cloud server.
+        if self.id == 0:
+            return 0
+
         hist_window_size = min(hist_window_size, len(self.mon_disk_util_hist))
         index = len(self.mon_disk_util_hist) - 1
         cnt = 0

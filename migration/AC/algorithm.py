@@ -95,7 +95,6 @@ class ActorCriticMigrationAlgorithm(Algorithm):
                 log.debug("Service {} stays in the current M{}@E{}".format(
                     service.id, src_machine, src_machine.machine_profile.edgeDC_id))
 
-
         # Step 7: get the next state.
         batch = self.make_batch(placement_map, mec_net)
         next_state = torch.from_numpy(batch).float()
