@@ -149,6 +149,10 @@ class MECNetwork:
     # source_id: service.user_loc (so edge DC id)
     # dest_id: destination machine id
     def get_path_cost(self, source_id, dest_id):
+        # FIXME:
+        if self.machines[dest_id].destroyed is True:
+            return 10000
+
         source = self.edgeDCs[source_id]
         dest_edgeDC_id = self.machines[dest_id].machine_profile.edgeDC_id
         dest = self.edgeDCs[dest_edgeDC_id]

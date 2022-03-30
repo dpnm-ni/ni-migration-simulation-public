@@ -24,7 +24,7 @@ class ActorCriticMigrationAlgorithm(Algorithm):
                               service.service_profile.duration, service.service_profile.e2e_latency]
                 s_m_pairs.append(s_m_pair)
             batch.append(s_m_pairs)
-        batch = np.array(batch).astype(float)
+        batch = np.array(batch, dtype=np.float32)
 
         return batch
 
@@ -114,14 +114,10 @@ class ActorCriticMigrationAlgorithm(Algorithm):
         avg_machine_failure_score_after = sum_machine_failure_score / len(destination_machines)
 
         # Step 8-3: compute performance benefits after migration.
-        # L_gains = avg_latency_before - avg_latency_after
-        # L_gains = (avg_latency_before - avg_latency_after) / (avg_latency_before + 1e-5)
         if avg_latency_before == 0:
             L_gains = 0
         else:
             L_gains = (avg_latency_before - avg_latency_after) / avg_latency_before
-        # A_gains = avg_machine_failure_score_before - avg_machine_failure_score_after
-        # A_gains = (avg_machine_failure_score_before - avg_machine_failure_score_after) / (avg_machine_failure_score_before + 1e-5)
         if avg_machine_failure_score_before == 0:
             A_gains = 0
         else:
@@ -130,5 +126,5 @@ class ActorCriticMigrationAlgorithm(Algorithm):
 
         # Step 9: return the transition (s, a, r, s').
         # return state, selected_machines, reward, next_state
-        action = torch.from_numpy(np.array([machine.id for machine in destination_machines]).astype(np.int64)).view([-1, 1, 1])
+        action = torch.from_numpy(np.array([machine.id for machine in destination_machines], dtype=np.int64)).view([-1, 1, 1])
         return state, action, reward, next_state

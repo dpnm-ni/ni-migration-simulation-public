@@ -76,7 +76,6 @@ class Machine:
             cnt += 1
         return sum / hist_window_size
 
-
     def destroy(self):
         services = self.running_service_instances
         for service in services:
@@ -91,11 +90,16 @@ class Machine:
             # self.stop_service_instance(service)
             # self.mec_net.interrupted_services.append(service)
 
-        # !중요: class 간 dependency 때문에(path cost 연산 등) 해당 머신을 topology 자체에서 지우지는 말고 스케쥴링만 배제되도록 임시 설정해놓음
+        # FIXME: class 간 dependency 때문에(path cost 연산 등) 해당 머신을 topology 자체에서 지우지는 말고 스케쥴링만 배제되도록 임시 설정해놓음
         # self.mec_net.machines.remove(self)
-        # self.cpu_capacity = 0
-        # self.memory_capacity = 0
-        # self.disk_capacity = 0
+        self.cpu_capacity = 0
+        self.cpu = 0
+        self.memory_capacity = 0
+        self.memory = 0
+        self.disk_capacity = 0
+        self.disk = 0
+        self.mon_disk_utilization = 0
+
         self.destroyed = True
 
     def get_state(self):

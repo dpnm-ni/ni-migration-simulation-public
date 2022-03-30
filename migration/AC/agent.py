@@ -7,10 +7,16 @@ from torch.distributions import Categorical
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.001
 # https://www.reddit.com/r/MachineLearning/comments/3n8g28/gradient_clipping_what_are_good_values_to_clip_at/
-CLIPPING_NORM = 1
+MAX_GRAD_NORM = 1
 GAMMA = 0.98
+
+# https://doheejin.github.io/pytorch/2021/09/22/pytorch-autograd-detect-anomaly.html
+# torch.autograd.set_detect_anomaly(True)
+
+# https://pytorch.org/docs/stable/notes/randomness.html
+torch.manual_seed(0)
 
 
 class ActorCriticMigrationAgent:
@@ -68,20 +74,24 @@ class ActorCriticMigrationAgent:
         td_target = r + GAMMA * self.net.v(s_prime)
         delta = td_target - self.net.v(s)
 
-        pi = self.net.pi(s)
+        pi = self.net.pi(s, softmax_dim=0)
         pi_a = pi.gather(1, a)
         # pi_a = pi.gather(0, a)
         # loss = -torch.log(pi_a) * delta.detach() + F.smooth_l1_loss(self.net.v(s), td_target.detach())
-        pi_utilization_func = -torch.log(pi_a) * delta.detach()
-        v_loss_func = F.smooth_l1_loss(self.net.v(s), td_target.detach())
+        pi_utilization_func = -torch.log(pi_a) * delta.detach().float()
+        v_loss_func = F.smooth_l1_loss(self.net.v(s), td_target.detach().float())
         loss = pi_utilization_func + v_loss_func
 
         self.net.optimizer.zero_grad()
-        loss.mean().backward()
+        # https://velog.io/@0hye/PyTorch-Nan-Loss-%EA%B2%80%EC%B6%9C-%EB%B0%A9%EB%B2%95
+        if not torch.isfinite(loss.nanmean()):
+            print('WARNING: non-finite loss, ending training ')
+            exit(1)
+        loss.nanmean().backward()
+
         # Gradient clipping to avoid nan loss.
-        # https://discuss.pytorch.org/t/nan-loss-coming-after-some-time/11568
         # https://kh-kim.gitbook.io/natural-language-processing-with-pytorch/00-cover-6/05-gradient-clipping
-        # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=CLIPPING_NORM)
+        # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=MAX_GRAD_NORM)
         self.net.optimizer.step()
 
 
@@ -102,12 +112,12 @@ class Net(nn.Module):
 
         self.optimizer = optim.Adam(self.parameters(), lr=LEARNING_RATE)
 
-    def pi(self, x):
+    def pi(self, x, softmax_dim=0):
         x = F.relu(self.input(x))
         x = F.relu(self.hidden1(x))
         x = F.relu(self.hidden2(x))
 
-        prob = F.softmax(self.fc_pi(x), dim=0)
+        prob = F.softmax(self.fc_pi(x), dim=softmax_dim)
         return prob
 
     def v(self, x):
