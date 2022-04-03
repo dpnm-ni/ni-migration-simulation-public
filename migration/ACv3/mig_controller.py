@@ -1,7 +1,7 @@
 from base_logger import log
 
 # 1/3/5/10/... 각 경우에 성능 평가할 것
-MIGRATION_INTERVAL = 30
+MIGRATION_INTERVAL = 20
 NUM_ROLLOUT = 10
 
 
@@ -26,7 +26,7 @@ class ActorCriticv3MigrationController:
         yield self.env.timeout(MIGRATION_INTERVAL)
         while not self.simulation.is_finished():
             self.run_cnt += 1
-            print(self.edgeDC_id)
+            # print(self.edgeDC_id)
             self.make_migration_decision()
 
             if len(self.migration_algorithm.agents[self.edgeDC_id].data) != 0 and self.run_cnt % NUM_ROLLOUT == 0:

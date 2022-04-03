@@ -63,7 +63,7 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
 
     def __call__(self, mec_net, edgeDC_id):
         edge_running_services = mec_net.get_edge_unfinished_services(edgeDC_id)
-        # FIXME:
+        # TODO: migration 대상 서비스가 없을 시 skip (정책 없음?)
         if len(edge_running_services) == 0:
             return None
 
@@ -131,7 +131,7 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
                         service_migration_status[i] = MIGRATION_STATUS.SAME_SOURCE_DESTINATION
                 if j == len(candidate_dest_machines) - 1:
                     service_migration_status[i] = MIGRATION_STATUS.VIOLATION_SLA_LATENCY
-                    # service.live_migrate_service_instance(src_machine, dest_machine)
+                    service.live_migrate_service_instance(src_machine, dest_machine)
 
 
         # Step 6: get the next state.
@@ -152,11 +152,12 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
             elif service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_AVAILABILITY:
                 # FIXME:
                 latency = mec_net.get_path_cost(service.user_loc, service.machine.id)
-                failure_score = 1
+                # failure_score = 1
+                failure_score = dest_edge_machines[i].compute_failure_score(hist_window_size=5)
             elif service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_LATENCY:
                 # FIXME:
-                # latency = 10000
-                latency = mec_net.max_path_cost
+                latency = 100
+                # latency = mec_net.max_path_cost
                 failure_score = dest_edge_machines[i].compute_failure_score(hist_window_size=5)
             else:
                 latency = None

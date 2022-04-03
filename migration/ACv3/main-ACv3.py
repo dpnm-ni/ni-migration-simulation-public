@@ -60,7 +60,7 @@ def main():
     # TODO: if DRL-based deployment is also used.
     deployment_agent = None
 
-    # Multi-agents ver: each agent controls a policy for each edge DC.
+    # Multi-agents ver: each agent controls a policy for the corresponding edge DC.
     migration_agents = []
     for i in range(NUM_EDGE_DC + 1):
         migration_agents.append(ActorCriticv3MigrationAgent(i, DIM_MIG_NN_INPUT))
