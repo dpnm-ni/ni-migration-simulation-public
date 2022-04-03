@@ -73,8 +73,17 @@ def save_result(episode, start_time):
     avg_service_latencies_itr.append(average_service_latency(episode))
     avg_service_prov_delays_itr.append(average_service_queuing_delay(episode))
 
-    accum_rewards_itr.append(np.sum(episode.simulation.controller.hist_rewards))
-    avg_rewards_itr.append(np.mean(episode.simulation.controller.hist_rewards))
+    if isinstance(episode.simulation.controller, list):
+        lst_hist_rewards = []
+        num_hist_rewards = 0
+        for controller in episode.simulation.controller:
+            lst_hist_rewards.append(controller.hist_rewards)
+            num_hist_rewards += len(controller.hist_rewards)
+        accum_rewards_itr.append(np.sum(lst_hist_rewards))
+        # avg_rewards_itr.append(np.sum(lst_hist_rewards) / num_hist_rewards)
+    else:
+        accum_rewards_itr.append(np.sum(episode.simulation.controller.hist_rewards))
+        avg_rewards_itr.append(np.mean(episode.simulation.controller.hist_rewards))
 
 
 def write_result():

@@ -225,6 +225,14 @@ class MECNetwork:
                 ls.append(service)
         return ls
 
+    # Get a list of services running in the specified edge DC.
+    def get_edge_unfinished_services(self, edgeDC_id):
+        return [service for service in self.get_unfinished_services()
+                if service.machine.machine_profile.edgeDC_id == edgeDC_id]
+
+    def get_edge_machines(self, edgeDC_id):
+        return [machine for machine in self.machines
+                if machine.machine_profile.edgeDC_id == edgeDC_id]
 
 def test():
     mec_net = MECNetwork()

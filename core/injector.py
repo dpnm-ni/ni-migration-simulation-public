@@ -23,7 +23,6 @@ class FaultInjector:
                 if machine.mon_disk_overutil_cnt >= DISK_FAULT_THRESHOLD:
                     log.info("[{}] Machine {} at Edge {} has been failed. running instances will be interrupted...".format(
                         self.env.now, machine.id, machine.machine_profile.edgeDC_id))
-                    machine.destroy()
-                    machine.mon_disk_overutil_cnt = 0
+                    # machine.destroy()
 
             yield self.env.timeout(INJECTOR_INTERVAL)

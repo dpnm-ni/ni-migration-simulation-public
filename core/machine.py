@@ -103,6 +103,7 @@ class Machine:
         self.disk_capacity = 0
         self.disk = 0
         self.mon_disk_utilization = 0
+        self.mon_disk_overutil_cnt = 0
 
         self.destroyed = True
 
