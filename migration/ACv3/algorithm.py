@@ -1,7 +1,6 @@
 import random
 import numpy as np
 import torch
-from base_logger import log
 from core.algorithm import Algorithm
 from enum import IntFlag
 
@@ -43,17 +42,26 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
             sum_edge_disk += machine.disk
         avg_edge_disk = sum_edge_disk / len(edge_machines)
 
-        return edge_machines[0].id, avg_edge_cpu, avg_edge_mem, avg_edge_disk
+        sum_edge_disk_util = 0
+        for machine in edge_machines:
+            sum_edge_disk_util += machine.mon_disk_utilization
+        avg_edge_disk_util = sum_edge_disk_util / len(edge_machines)
+
+        return edge_machines[0], avg_edge_cpu, avg_edge_mem, avg_edge_disk, avg_edge_disk_util
+
+    # def compute_edge_profiles(self, mec_net):
+    #     edge_profiles = []
+    #     ...
 
     def make_batch(self, mec_net, edge_profile, services):
-        sample_edge_machine_id, avg_edge_cpu, avg_edge_mem, avg_edge_disk = edge_profile
-
+        sample_edge_machine, avg_edge_cpu, avg_edge_mem, avg_edge_disk, avg_edge_disk_util= edge_profile
         batch = []
         for service in services:
-            feature_vector = [avg_edge_cpu, avg_edge_mem, avg_edge_disk] \
+            feature_vector = [avg_edge_cpu, avg_edge_mem, avg_edge_disk, avg_edge_disk_util] \
+                             + [sample_edge_machine.machine_profile.edgeDC_id] \
                              + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk] \
                              + [service.service_profile.e2e_latency, service.service_profile.e2e_availability] \
-                             + [mec_net.get_path_cost(source_id=service.user_loc, dest_id=sample_edge_machine_id)]
+                             + [mec_net.get_path_cost(source_id=service.user_loc, dest_id=sample_edge_machine.id)]
             batch.append(feature_vector)
         return np.array(batch, dtype=np.float32)
 
@@ -78,26 +86,23 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
             sum_machine_failure_score += service.machine.compute_failure_score(hist_window_size=5)
         avg_availability_before = sum_machine_failure_score / len(edge_running_services)
 
-
         # Step 1: compute the edge profile.
         edge_profile = self.compute_edge_profile(mec_net, edgeDC_id)
-
+        # edge_profiles = self.compute_edge_profiles(mec_net)
 
         # Step 2: create an input batch for DNN.
         batch = self.make_batch(mec_net, edge_profile, edge_running_services)
 
-
         # Step 3: convert the batch into the corresponding state.
         state = torch.from_numpy(batch).float()
-
 
         # Step 4: select an action (selected machine as migration destination).
         dest_edge_ids = self.agents[edgeDC_id].get_action_set(state)
 
-
         # Step 5: migrate the service to the destination machine.
         assert len(edge_running_services) == len(dest_edge_ids)
         service_migration_status = [MIGRATION_STATUS.OK] * len(edge_running_services)
+        # FIXME:
         dest_edge_machines = [service.machine for service in edge_running_services]
         for i in range(len(edge_running_services)):
             service = edge_running_services[i]
@@ -131,13 +136,13 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
                         service_migration_status[i] = MIGRATION_STATUS.SAME_SOURCE_DESTINATION
                 if j == len(candidate_dest_machines) - 1:
                     service_migration_status[i] = MIGRATION_STATUS.VIOLATION_SLA_LATENCY
-                    service.live_migrate_service_instance(src_machine, dest_machine)
-
+                    # FIXME:
+                    # dest_edge_machines[i] = dest_machine
+                    # service.live_migrate_service_instance(src_machine, dest_machine)
 
         # Step 6: get the next state.
         batch = self.make_batch(mec_net, edge_profile, edge_running_services)
         next_state = torch.from_numpy(batch).float()
-
 
         # Step 7: compute an instant reward for the migration action.
         assert len(edge_running_services) == len(service_migration_status) == len(dest_edge_machines)
@@ -146,14 +151,16 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
         for i in range(len(edge_running_services)):
             service = edge_running_services[i]
             if service_migration_status[i] == MIGRATION_STATUS.OK or MIGRATION_STATUS.ONGOING or \
-                MIGRATION_STATUS.NO_ACCOMMODABLE_MACHINES or MIGRATION_STATUS.SAME_SOURCE_DESTINATION:
+                    MIGRATION_STATUS.NO_ACCOMMODABLE_MACHINES or MIGRATION_STATUS.SAME_SOURCE_DESTINATION:
+                # TODO: ensure MIGRATION_STATUS.OK의 경우 이 시점에 service.machine.id == dest_machine.id?
                 latency = mec_net.get_path_cost(service.user_loc, service.machine.id)
                 failure_score = dest_edge_machines[i].compute_failure_score(hist_window_size=5)
             elif service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_AVAILABILITY:
                 # FIXME:
                 latency = mec_net.get_path_cost(service.user_loc, service.machine.id)
-                # failure_score = 1
-                failure_score = dest_edge_machines[i].compute_failure_score(hist_window_size=5)
+                # FIXME: 고장 가능성 높은 서버 피하는 행위 유도
+                failure_score = 1
+                # failure_score = dest_edge_machines[i].compute_failure_score(hist_window_size=5)
             elif service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_LATENCY:
                 # FIXME:
                 latency = 100
@@ -169,9 +176,38 @@ class ActorCriticv3MigrationAlgorithm(Algorithm):
         avg_latency_after = sum_latency / len(edge_running_services)
         avg_availability_after = sum_failure_score / len(edge_running_services)
 
-        L_benefit = (avg_latency_before - avg_latency_after) / avg_latency_before if avg_latency_before != 0 else 0
-        A_benefit = (avg_availability_before - avg_availability_after) / avg_availability_before if avg_availability_before != 0 else 0
-        reward = (L_benefit + A_benefit) * 100
+        # Note: 어떻게 migration 되도 before = 0 보다 좋아질 수 없으므로 reward가 0이다 (X) => -1이다 (현상태 유지 유도)
+        # L_benefit = (avg_latency_before - avg_latency_after) / avg_latency_before if avg_latency_before != 0 else 0
+        # L_benefit = (avg_latency_before - avg_latency_after) / avg_latency_before if avg_latency_before != 0 else -1
+        # A_benefit = (avg_availability_before - avg_availability_after) / avg_availability_before if avg_availability_before != 0 else -1
+        if avg_latency_before != 0:
+            # FIXME: latency 최소화 가속하고자 임의로 가중치 10 부여
+            # L_benefit = ((avg_latency_before - avg_latency_after) / avg_latency_before) * 10
+            L_benefit = (avg_latency_before - avg_latency_after) / avg_latency_before
+        else:
+            if avg_latency_after == 0:
+                L_benefit = 1
+            else:
+                L_benefit = -1
+
+        if avg_availability_before != 0:
+            A_benefit = (avg_availability_before - avg_availability_after) / avg_availability_before
+        else:
+            if avg_availability_after == 0:
+                A_benefit = 1
+            else:
+                A_benefit = -1
+
+        # Apply a non-linear function to each reward.
+        # Note: -1, 1 양 극단값에 대해 약 -10, 10으로 펌핑
+        L_benefit = np.arctanh(np.clip(L_benefit, -1 + 1e-9, 1 - 1e-9))
+        A_benefit = np.arctanh(np.clip(A_benefit, -1 + 1e-9, 1 - 1e-9))
+
+        # Apply a weight to each reward (sum to 1).
+        Wl = 1.
+        Wa = 0.
+
+        reward = Wl * L_benefit + Wa * A_benefit
 
         # Step 8: return the transition (s, a, r, s').
         # TODO: index or machine id? 만약 id가 action이라면 get_action 변경 필요.

@@ -40,7 +40,10 @@ class Episode:
         if isinstance(migration_algorithm, DQNMigrationAlgorithm):
             mig_controller = DQNMigrationController(self.env, migration_algorithm)
         elif isinstance(migration_algorithm, DQNv2MigrationAlgorithm):
-            mig_controller = DQNv2MigrationController(self.env, migration_algorithm)
+            mig_controller = []
+            # FIXME:
+            for i in range(16):
+                mig_controller.append(DQNv2MigrationController(self.env, migration_algorithm))
         elif isinstance(migration_algorithm, REINFORCEMigrationAlgorithm):
             mig_controller = REINFORCEMigrationController(self.env, migration_algorithm)
         elif isinstance(migration_algorithm, ActorCriticMigrationAlgorithm):

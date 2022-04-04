@@ -56,6 +56,8 @@ class Service:
         self.machine.run_service_instance(self)
         self.work_event = self.env.process(self.do_work())
 
+
+
     def live_migrate_service_instance(self, src_machine, dest_machine):
         assert self.started is True and self.finished is False
         assert self.machine == src_machine

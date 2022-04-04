@@ -1,3 +1,4 @@
+import random
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,7 +7,7 @@ import torch.optim as optim
 from torch.distributions import Categorical
 
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
-NUM_NEURONS = 64
+NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
 LEARNING_RATE = 0.001
 THRESHOLD_GRAD_NORM = 1
@@ -17,12 +18,15 @@ GAMMA = 0.98
 
 # https://pytorch.org/docs/stable/notes/randomness.html
 torch.manual_seed(0)
+random.seed(0)
+np.random.seed(0)
 
 
 class ActorCriticv3MigrationAgent:
     def __init__(self, edgeDC_id, dim_mig_nn_input):
         self.edgeDC_id = edgeDC_id
         self.net = Net(dim_mig_nn_input)
+
         self.num_epi = 0
         self.data = []
 
@@ -53,7 +57,7 @@ class ActorCriticv3MigrationAgent:
 
             self.net.optimizer.zero_grad()
             loss.mean().backward()
-            torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+            # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
             self.net.optimizer.step()
 
         self.data = []

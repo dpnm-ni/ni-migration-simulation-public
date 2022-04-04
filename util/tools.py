@@ -1,18 +1,25 @@
-# FIXME: remove all unused functions.
 import time
 import numpy as np
 from base_logger import log
 
-NUM_EPISODES_ITR = 10
+# FIXME: ensure same as NUM_EPISODES in the target main.py.
+NUM_EPISODES_ITR = 1
+
+# System performance.
 sim_times_itr = [] * NUM_EPISODES_ITR
 makespans_itr = [] * NUM_EPISODES_ITR
 avg_resource_utils_itr = [] * NUM_EPISODES_ITR
 service_interruptions_itr = [] * NUM_EPISODES_ITR
+avg_num_migrations_itr = [] * NUM_EPISODES_ITR
 accum_path_costs_itr = [] * NUM_EPISODES_ITR
 avg_service_latencies_itr = [] * NUM_EPISODES_ITR
 avg_service_prov_delays_itr = [] * NUM_EPISODES_ITR
-accum_rewards_itr = [] * NUM_EPISODES_ITR
-avg_rewards_itr = [] * NUM_EPISODES_ITR
+
+# RL performance.
+agents_accum_rewards_itr = [] * NUM_EPISODES_ITR
+agents_avg_rewards_itr = [] * NUM_EPISODES_ITR
+total_accum_rewards_itr = [] * NUM_EPISODES_ITR
+total_avg_rewards_itr = [] * NUM_EPISODES_ITR
 
 
 # compute average time for a service from its submission to completion
@@ -64,49 +71,69 @@ def print_result(episode, start_time):
 
 
 def save_result(episode, start_time):
+    # System performance.
     sim_times_itr.append(time.time() - start_time)
     makespans_itr.append(episode.env.now)
     # Take cpu util only.
     avg_resource_utils_itr.append([edge_util[0] for edge_util in average_resource_utilization(episode)])
     service_interruptions_itr.append(service_interruptions(episode))
+    avg_num_migrations_itr.append(average_num_migrations(episode))
     accum_path_costs_itr.append(episode.simulation.monitor.accum_path_cost)
     avg_service_latencies_itr.append(average_service_latency(episode))
     avg_service_prov_delays_itr.append(average_service_queuing_delay(episode))
 
+    # RL performance.
+    # Multi-agents.
     if isinstance(episode.simulation.controller, list):
-        lst_hist_rewards = []
-        num_hist_rewards = 0
-        for controller in episode.simulation.controller:
-            lst_hist_rewards.append(controller.hist_rewards)
-            num_hist_rewards += len(controller.hist_rewards)
-        accum_rewards_itr.append(np.sum(lst_hist_rewards))
-        # avg_rewards_itr.append(np.sum(lst_hist_rewards) / num_hist_rewards)
+        num_edgeDCs = len(episode.simulation.mec_net.edgeDCs)
+        agents_sum_reward = [0] * num_edgeDCs
+        agents_avg_reward = [0] * num_edgeDCs
+        assert num_edgeDCs == len(episode.simulation.controller)
+        for i, controller in zip(range(num_edgeDCs), episode.simulation.controller):
+            agents_sum_reward[i] = np.sum(controller.hist_rewards)
+            # agents_avg_reward[i] = agents_sum_reward[i] / len(controller.hist_rewards)
+            agents_avg_reward[i] = round(np.mean(controller.hist_rewards), 3)
+
+        agents_accum_rewards_itr.append(agents_sum_reward)
+        agents_avg_rewards_itr.append(agents_avg_reward)
+        total_accum_rewards_itr.append(np.sum(agents_sum_reward))
+        total_avg_rewards_itr.append(np.mean(agents_avg_reward))
+
+    # Single agent.
     else:
-        accum_rewards_itr.append(np.sum(episode.simulation.controller.hist_rewards))
-        avg_rewards_itr.append(np.mean(episode.simulation.controller.hist_rewards))
+        total_accum_rewards_itr.append(np.sum(episode.simulation.controller.hist_rewards))
+        total_avg_rewards_itr.append(np.mean(episode.simulation.controller.hist_rewards))
 
 
+# list 포맷 유지하려면 mean(axis=0) 추가
 def write_result():
     with open("result.txt", 'a') as f:
         print(str(np.mean(sim_times_itr)) + ", " +
               str(np.mean(makespans_itr)) + ", " +
               str(np.mean(avg_resource_utils_itr, axis=0)) + ", " +
               str(np.mean(service_interruptions_itr)) + ", " +
+              str(np.mean(avg_num_migrations_itr, axis=0)) + ", " +
               str(np.mean(accum_path_costs_itr)) + ", " +
               str(np.mean(avg_service_latencies_itr, axis=0)) + ", " +
               str(np.mean(avg_service_prov_delays_itr, axis=0)) + ", " +
-              str(np.mean(accum_rewards_itr)) + ", " +
-              str(np.mean(avg_rewards_itr)), file=f)
+              # str(np.mean(agents_accum_rewards_itr)) + ", " +
+              str(np.mean(agents_avg_rewards_itr, axis=0)).replace("\n", " ") + ", " +
+              str(np.mean(total_accum_rewards_itr)) + ", " +
+              str(np.mean(total_avg_rewards_itr)), file=f)
 
     sim_times_itr.clear()
     makespans_itr.clear()
     avg_resource_utils_itr.clear()
     service_interruptions_itr.clear()
+    avg_num_migrations_itr.clear()
     accum_path_costs_itr.clear()
     avg_service_latencies_itr.clear()
     avg_service_prov_delays_itr.clear()
-    accum_rewards_itr.clear()
-    avg_rewards_itr.clear()
+
+    agents_accum_rewards_itr.clear()
+    agents_avg_rewards_itr.clear()
+    total_accum_rewards_itr.clear()
+    total_avg_rewards_itr.clear()
 
 
 def average_resource_utilization(episode):
@@ -152,6 +179,16 @@ def service_interruptions(episode):
         total += service.num_interruptions_by_fault
     return total
 
+
+def average_num_migrations(episode):
+    # FIXME: 4
+    types_num_migrations = [0] * 4
+    types_num_services = [0] * 4
+    for service in episode.simulation.mec_net.services:
+        types_num_migrations[service.get_service_type()] += service.num_interruptions_by_migration
+        types_num_services[service.get_service_type()] += 1
+
+    return [types_num_migrations[i] / types_num_services[i] for i in range(len(types_num_migrations))]
 
 def average_service_latency(episode):
     result = []

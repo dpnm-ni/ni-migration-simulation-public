@@ -1,7 +1,5 @@
 import os
 import time
-import numpy as np
-from config import cfg
 from base_logger import log
 from core.algorithm import RandomAlgorithm, FirstFitAlgorithm, LeastCostAlgorithm
 from core.episode import Episode
@@ -24,10 +22,10 @@ SERVICE_FILE_OFFSET = 0
 SERVICE_FILE_LENGTH = 1000
 
 # RL config
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 3000
 NUM_EPISODES = 1
-DIM_DEP_NN_INPUT = 9
-DIM_MIG_NN_INPUT = 9
+# DIM_DEP_NN_INPUT = 9
+DIM_MIG_NN_INPUT = 11
 
 
 # 시뮬레이터 동작 로그 없이 각 알고리즘의 결과만 출력하려면 base_logger의 로그 레벨 INFO로 바꿀 것
@@ -58,18 +56,23 @@ def main():
     # print_result(episode, tic)
 
 
-    # FirstFit deployment with DQN-based migration.
-    cnt = 0
+    # Baseline deployment + REINFORCE-based migration.
     # TODO: if DRL-based deployment is also used.
     deployment_agent = None
-    migration_agent = DQNv2MigrationAgent(DIM_MIG_NN_INPUT)
+
+    # Multi-agents ver: each agent controls a policy for the corresponding edge DC.
+    migration_agents = []
+    for i in range(NUM_EDGE_DC + 1):
+        migration_agents.append(DQNv2MigrationAgent(i, DIM_MIG_NN_INPUT))
+
+    cnt = 0
     for itr in range(NUM_ITERATIONS):
         log.debug("\n********** Iteration{} ************".format(itr))
         for epi in range(NUM_EPISODES):
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
             start_time = time.time()
             deployment_algorithm = FirstFitAlgorithm()
-            migration_algorithm = DQNv2MigrationAlgorithm(migration_agent, num_epi=cnt)
+            migration_algorithm = DQNv2MigrationAlgorithm(migration_agents, num_epi=cnt)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
             episode.run()
 
@@ -77,7 +80,8 @@ def main():
             save_result(episode, start_time)
 
             # Sync the target QNet (DNN) with the main (learning) QNet every episode.
-            migration_agent.update_target_q_function()
+            for i in range(NUM_EDGE_DC + 1):
+                migration_agents[i].update_target_q_function()
             cnt += 1
 
         write_result()
