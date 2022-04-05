@@ -190,6 +190,7 @@ def average_num_migrations(episode):
 
     return [types_num_migrations[i] / types_num_services[i] for i in range(len(types_num_migrations))]
 
+
 def average_service_latency(episode):
     result = []
     for hist_type_path_cost in episode.simulation.monitor.hist_types_path_costs:

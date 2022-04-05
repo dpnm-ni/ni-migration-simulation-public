@@ -13,7 +13,7 @@ LEARNING_RATE = 0.001
 THRESHOLD_GRAD_NORM = 1
 # replay mem capacity: 10000 (Cartpole), 2500 (도영 DQN)
 # FIXME: 1 episode에 대략 몇 개 저장되는지 확인 후 적절한 값 설정
-BUFFER_CAPACITY = 5000
+BUFFER_CAPACITY = 2500
 # FIXME: 1 에피소드에 각 엣지별 평균 50~100개 transition 생성됨. 에피소드 #2부터 학습 시작하도록
 LEAST_SIZE_TO_LEARN = 100
 # FIXME:

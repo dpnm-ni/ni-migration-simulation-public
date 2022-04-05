@@ -1,7 +1,5 @@
 import os
 import time
-import numpy as np
-from config import cfg
 from base_logger import log
 from core.algorithm import RandomAlgorithm, FirstFitAlgorithm, LeastCostAlgorithm
 from core.episode import Episode
@@ -24,7 +22,7 @@ SERVICE_FILE_OFFSET = 0
 SERVICE_FILE_LENGTH = 1000
 
 # RL config
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 3000
 NUM_EPISODES = 1
 # DIM_DEP_NN_INPUT = 9
 DIM_MIG_NN_INPUT = 10
@@ -59,10 +57,11 @@ def main():
 
 
     # Baseline deployment + REINFORCE-based migration.
-    cnt = 0
     # TODO: if DRL-based deployment is also used.
     deployment_agent = None
     migration_agent = ActorCriticv2MigrationAgent(DIM_MIG_NN_INPUT)
+
+    cnt = 0
     for itr in range(NUM_ITERATIONS):
         log.debug("\n********** Iteration{} ************".format(itr))
         for epi in range(NUM_EPISODES):

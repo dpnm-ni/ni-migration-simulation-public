@@ -1,12 +1,10 @@
 from base_logger import log
 
 # 1/3/5/10/... 각 경우에 성능 평가할 것
-MIGRATION_INTERVAL = 30
-# NUM_ROLLOUT = 10
-NUM_ROLLOUT = 1
+MIGRATION_INTERVAL = 20
+NUM_ROLLOUT = 10
 
 
-# TODO: 사실상 agent이므로 brain만 따로 빼고 기능 통합시킬 것
 class ActorCriticv2MigrationController:
     def __init__(self, env, migration_algorithm):
         self.env = env
@@ -27,8 +25,8 @@ class ActorCriticv2MigrationController:
             self.run_cnt += 1
             self.make_migration_decision()
 
-            # if len(self.migration_algorithm.agent.data) != 0 and self.run_cnt % NUM_ROLLOUT == 0:
-            #     self.migration_algorithm.agent.train()
+            if len(self.migration_algorithm.agent.data) != 0 and self.run_cnt % NUM_ROLLOUT == 0:
+                self.migration_algorithm.agent.train()
 
             yield self.env.timeout(MIGRATION_INTERVAL)
 
@@ -38,13 +36,9 @@ class ActorCriticv2MigrationController:
         for i in range(len(running_services)):
             service = running_services[i]
             transition = self.migration_algorithm(self.mec_net, service)
-            # FIXME:
             if transition is None:
                 continue
             else:
-                # s, a, r, s_prime = ret
-                # self.migration_algorithm.agent.put_data((s, a, r, s_prime, None))
-                # self.hist_rewards.append(r)
                 transitions.append(transition)
 
         sum_rewards = 0
@@ -58,4 +52,4 @@ class ActorCriticv2MigrationController:
             self.migration_algorithm.agent.put_data((s, a, avg_reward, s_prime, None))
             self.hist_rewards.append(avg_reward)
 
-            self.migration_algorithm.agent.train()
+            # self.migration_algorithm.agent.train()

@@ -13,12 +13,12 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
     def make_batch(self, service, machines):
         batch = []
         for machine in machines:
-            # TODO: duration should be included? availability? feature에 포함되는 기준이 무엇인지 명확히할 것.
-            feature_vector = [machine.mec_net.get_path_cost(source_id=service.user_loc, dest_id=machine.id)] \
-                             + [machine.cpu, machine.memory, machine.disk] \
-                             + [machine.mon_disk_utilization] \
-                             + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk,
-                                service.service_profile.duration, service.service_profile.e2e_latency]
+            # Note: DQNv2와 동일하게 맞춤
+            feature_vector = [machine.cpu, machine.memory, machine.disk, machine.mon_disk_utilization] \
+                             + [machine.machine_profile.edgeDC_id] \
+                             + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk] \
+                             + [service.service_profile.e2e_latency] \
+                             + [machine.mec_net.get_path_cost(source_id=service.user_loc, dest_id=machine.id)]
             batch.append(feature_vector)
         return np.array(batch, dtype=np.float32)
 
@@ -26,8 +26,12 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
         # Step 1: find available machines that ensure SLA constraints of the given service.
         candidate_machines = []
         for machine in mec_net.machines:
+            # if service.migrating is False and \
+            #         service.can_allow_availability() is True and \
+            #         self.can_satisfy_e2e_latency(mec_net, service, machine) and \
+            #         machine.can_accommodate(service.service_profile):
+            # FIXME: DDPG 논문과의 비교 위해 availability 체크 해제 (해당 논문에서 고려 안함)
             if service.migrating is False and \
-                    service.can_allow_availability() is True and \
                     self.can_satisfy_e2e_latency(mec_net, service, machine) and \
                     machine.can_accommodate(service.service_profile):
                 candidate_machines.append(machine)
@@ -60,17 +64,37 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
         # Step 7: compute an instant reward for the migration action.
         latency_before = mec_net.get_path_cost(source_id=service.user_loc, dest_id=src_machine.id)
         latency_after = mec_net.get_path_cost(source_id=service.user_loc, dest_id=dest_machine.id)
-        L_benefit = (latency_before - latency_after) / latency_before if latency_before != 0 else 0
+        if latency_before != 0:
+            L_benefit = (latency_before - latency_after) / latency_before
+        else:
+            if latency_after == 0:
+                L_benefit = 1
+            else:
+                L_benefit = -1
 
         availability_before = src_machine.compute_failure_score(hist_window_size=5)
         availability_after = dest_machine.compute_failure_score(hist_window_size=5)
-        A_benefit = (availability_before - availability_after) / availability_before if availability_before != 0 else 0
+        if availability_before != 0:
+            A_benefit = (availability_before - availability_after) / availability_before
+        else:
+            if availability_after == 0:
+                A_benefit = 1
+            else:
+                A_benefit = -1
 
-        # reward = (L_benefit + A_benefit) * 100
-        reward = L_benefit + A_benefit
+        # Apply a non-linear function to each reward.
+        # Note: -1, 1 양 극단값에 대해 약 -10, 10으로 펌핑
+        L_benefit = np.arctanh(np.clip(L_benefit, -1 + 1e-9, 1 - 1e-9))
+        A_benefit = np.arctanh(np.clip(A_benefit, -1 + 1e-9, 1 - 1e-9))
+
+        # Apply a weight to each reward (sum to 1).
+        Wl = 0.7
+        Wa = 0.3
+
+        reward = Wl * L_benefit + Wa * A_benefit
 
         # Step 8: return the transition (s, a, r, s').
         # TODO: index or machine id? 만약 id가 action이라면 get_action 변경 필요.
-        action = dest_machine_index
+        action = torch.tensor(dest_machine_index, dtype=np.int64)
         # action = dest_machine.id
         return state, action, reward, next_state
