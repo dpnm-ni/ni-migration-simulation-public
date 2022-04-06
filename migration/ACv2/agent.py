@@ -1,5 +1,3 @@
-import random
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,11 +14,6 @@ GAMMA = 0.98
 # https://doheejin.github.io/pytorch/2021/09/22/pytorch-autograd-detect-anomaly.html
 # torch.autograd.set_detect_anomaly(True)
 
-# https://pytorch.org/docs/stable/notes/randomness.html
-torch.manual_seed(0)
-random.seed(0)
-np.random.seed(0)
-
 
 class ActorCriticv2MigrationAgent:
     def __init__(self, dim_mig_nn_input):
@@ -30,29 +23,6 @@ class ActorCriticv2MigrationAgent:
 
     def put_data(self, item):
         self.data.append(item)
-
-    # def make_batch(self):
-    #     s_lst, a_lst, r_lst, s_prime_lst, done_mask_lst = [], [], [], [], []
-    #
-    #     for transition in self.data:
-    #         s, a, r, s_prime, done_mask = transition
-    #         s_lst.append(s)
-    #         a_lst.append([a])
-    #         r_lst.append([r])
-    #         s_prime_lst.append(s_prime)
-    #         # done_mask_lst.append([done_mask])
-    #
-    #     s_batch = torch.cat(s_lst)
-    #     a_batch = torch.tensor(a_lst, dtype=torch.int64)
-    #     r_batch = torch.tensor(r_lst, dtype=torch.float32)
-    #     s_prime_batch = torch.cat(s_prime_lst)
-    #     # s_batch = torch.tensor(s_lst, dtype=torch.float32)
-    #     # a_batch = torch.tensor(a_lst, dtype=torch.int64)
-    #     # r_batch = torch.tensor(r_lst, dtype=torch.float32)
-    #     # s_prime_batch = torch.tensor(s_prime_lst, dtype=torch.float32)
-    #
-    #     self.data = []
-    #     return s_batch, a_batch, r_batch, s_prime_batch
 
     def get_action(self, state):
         # Note: ensure torch.sum(fitness_scores[i]) == 1

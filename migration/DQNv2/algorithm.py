@@ -15,7 +15,7 @@ class MIGRATION_STATUS(IntFlag):
 
 
 class DQNv2MigrationAlgorithm(Algorithm):
-    def __init__(self, agents, num_epi, reward_giver=None):
+    def __init__(self, agents, num_epi, reward_giver):
         assert isinstance(agents, list)
         self.agents = agents
         for i in range(len(self.agents)):
@@ -176,38 +176,8 @@ class DQNv2MigrationAlgorithm(Algorithm):
         avg_latency_after = sum_latency / len(edge_running_services)
         avg_availability_after = sum_failure_score / len(edge_running_services)
 
-        # Note: 어떻게 migration 되도 before = 0 보다 좋아질 수 없으므로 reward가 0이다 (X) => -1이다 (현상태 유지 유도)
-        # L_benefit = (avg_latency_before - avg_latency_after) / avg_latency_before if avg_latency_before != 0 else 0
-        # L_benefit = (avg_latency_before - avg_latency_after) / avg_latency_before if avg_latency_before != 0 else -1
-        # A_benefit = (avg_availability_before - avg_availability_after) / avg_availability_before if avg_availability_before != 0 else -1
-        if avg_latency_before != 0:
-            # FIXME: latency 최소화 가속하고자 임의로 가중치 10 부여
-            # L_benefit = ((avg_latency_before - avg_latency_after) / avg_latency_before) * 10
-            L_benefit = (avg_latency_before - avg_latency_after) / avg_latency_before
-        else:
-            if avg_latency_after == 0:
-                L_benefit = 1
-            else:
-                L_benefit = -1
-
-        if avg_availability_before != 0:
-            A_benefit = (avg_availability_before - avg_availability_after) / avg_availability_before
-        else:
-            if avg_availability_after == 0:
-                A_benefit = 1
-            else:
-                A_benefit = -1
-
-        # Apply a non-linear function to each reward.
-        # Note: -1, 1 양 극단값에 대해 약 -10, 10으로 펌핑
-        L_benefit = np.arctanh(np.clip(L_benefit, -1 + 1e-9, 1 - 1e-9))
-        A_benefit = np.arctanh(np.clip(A_benefit, -1 + 1e-9, 1 - 1e-9))
-
-        # Apply a weight to each reward (sum to 1).
-        Wl = 1.
-        Wa = 0.
-
-        reward = Wl * L_benefit + Wa * A_benefit
+        reward = self.reward_giver(avg_latency_before, avg_latency_after,
+                                   avg_availability_before, avg_availability_after)
 
         # Step 8: return the transition (s, a, r, s').
         # TODO: index or machine id? 만약 id가 action이라면 get_action 변경 필요.

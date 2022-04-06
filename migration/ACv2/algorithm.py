@@ -5,9 +5,10 @@ from core.algorithm import Algorithm
 
 
 class ActorCriticv2MigrationAlgorithm(Algorithm):
-    def __init__(self, agent, num_epi, reward_giver=None):
+    def __init__(self, agent, num_epi, reward_giver):
         self.agent = agent
         self.agent.num_epi = num_epi
+
         self.reward_giver = reward_giver
 
     def make_batch(self, service, machines):
@@ -64,37 +65,14 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
         # Step 7: compute an instant reward for the migration action.
         latency_before = mec_net.get_path_cost(source_id=service.user_loc, dest_id=src_machine.id)
         latency_after = mec_net.get_path_cost(source_id=service.user_loc, dest_id=dest_machine.id)
-        if latency_before != 0:
-            L_benefit = (latency_before - latency_after) / latency_before
-        else:
-            if latency_after == 0:
-                L_benefit = 1
-            else:
-                L_benefit = -1
-
         availability_before = src_machine.compute_failure_score(hist_window_size=5)
         availability_after = dest_machine.compute_failure_score(hist_window_size=5)
-        if availability_before != 0:
-            A_benefit = (availability_before - availability_after) / availability_before
-        else:
-            if availability_after == 0:
-                A_benefit = 1
-            else:
-                A_benefit = -1
 
-        # Apply a non-linear function to each reward.
-        # Note: -1, 1 양 극단값에 대해 약 -10, 10으로 펌핑
-        L_benefit = np.arctanh(np.clip(L_benefit, -1 + 1e-9, 1 - 1e-9))
-        A_benefit = np.arctanh(np.clip(A_benefit, -1 + 1e-9, 1 - 1e-9))
-
-        # Apply a weight to each reward (sum to 1).
-        Wl = 0.7
-        Wa = 0.3
-
-        reward = Wl * L_benefit + Wa * A_benefit
+        reward = self.reward_giver(latency_before, latency_after,
+                                   availability_before, availability_after)
 
         # Step 8: return the transition (s, a, r, s').
         # TODO: index or machine id? 만약 id가 action이라면 get_action 변경 필요.
-        action = torch.tensor(dest_machine_index, dtype=np.int64)
+        action = torch.tensor(dest_machine_index, dtype=torch.int64)
         # action = dest_machine.id
         return state, action, reward, next_state

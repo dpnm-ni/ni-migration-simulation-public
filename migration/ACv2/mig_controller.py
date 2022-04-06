@@ -1,7 +1,7 @@
 from base_logger import log
 
 # 1/3/5/10/... 각 경우에 성능 평가할 것
-MIGRATION_INTERVAL = 20
+MIGRATION_INTERVAL = 30
 NUM_ROLLOUT = 10
 
 

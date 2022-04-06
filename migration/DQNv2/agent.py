@@ -1,7 +1,6 @@
 import collections
 import random
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -16,15 +15,9 @@ THRESHOLD_GRAD_NORM = 1
 BUFFER_CAPACITY = 2500
 # FIXME: 1 에피소드에 각 엣지별 평균 50~100개 transition 생성됨. 에피소드 #2부터 학습 시작하도록
 LEAST_SIZE_TO_LEARN = 100
-# FIXME:
 # mini-batch sampling size: 32 (Cartpole), 16 (도영)
 BATCH_SIZE = 16
 GAMMA = 0.98
-
-# https://pytorch.org/docs/stable/notes/randomness.html
-torch.manual_seed(0)
-random.seed(0)
-np.random.seed(0)
 
 
 class DQNv2MigrationAgent:
@@ -115,24 +108,6 @@ class ReplayBuffer:
 
     def put(self, transition):
         self.buffer.append(transition)
-
-    # def sample(self, n):
-    #     mini_batch = random.sample(self.buffer, n)
-    #     s_lst, a_lst, r_lst, s_prime_lst, done_mask_lst = [], [], [], [], []
-    #
-    #     for transition in mini_batch:
-    #         s, a, r, s_prime, done_mask = transition
-    #         s_lst.append(s)
-    #         a_lst.append([a])
-    #         r_lst.append([r])
-    #         s_prime_lst.append(s_prime)
-    #         done_mask_lst.append([done_mask])
-    #
-    #     # return torch.tensor(s_lst, dtype=torch.float), torch.tensor(a_lst), \
-    #     #        torch.tensor(r_lst), torch.tensor(s_prime_lst, dtype=torch.float), \
-    #     #        torch.tensor(done_mask_lst)
-    #     return torch.cat(s_lst), torch.tensor(a_lst), \
-    #            torch.tensor(r_lst), torch.cat(s_prime_lst)
 
     def size(self):
         return len(self.buffer)

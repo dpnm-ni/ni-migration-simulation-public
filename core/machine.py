@@ -65,6 +65,7 @@ class Machine:
                self.memory >= service_profile.memory and \
                self.disk >= service_profile.disk
 
+    # TODO: 리워드 계산에 직접 쓰이기 때문에 성능에 큰 영향. 개선 필요
     def compute_failure_score(self, hist_window_size=5):
         # Assume that failure does not happen to the cloud server.
         if self.id == 0:
@@ -78,7 +79,10 @@ class Machine:
             sum += float(self.mon_disk_util_hist[index])
             index -= 1
             cnt += 1
-        return sum / hist_window_size
+        # 기존: 지난 5 주기 동안 disk utilization 평균이 곧 고장 확룔로 해석 (too much sensitive)
+        # return sum / hist_window_size
+        # 신규: disk_overutil 곱해서 보정
+        return (sum / hist_window_size) * self.mon_disk_overutil_cnt
 
     def destroy(self):
         services = self.running_service_instances

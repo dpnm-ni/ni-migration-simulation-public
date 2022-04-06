@@ -7,11 +7,14 @@ from migration.ACv3.agent import ActorCriticv3MigrationAgent
 from migration.ACv3.algorithm import ActorCriticv3MigrationAlgorithm
 from util.csv_reader import CSVReader
 from util.tools import print_result, save_result, write_result
+from util.config import NUM_EDGE_DC, seed_handler
+from util.reward_giver import default_reward_giver
+
 
 # TODO: 실행 파라미터(topo name) 및 config 파일 이용할 것
 # num_machines = 5 if using test_least_cost.csv
 # Edgenet: 1 cloud DC and 15 edge DCs.
-NUM_EDGE_DC = 15
+# NUM_EDGE_DC = 15
 
 # TODO: 테스트 케이스 실행 따로 분리할 것
 # SERVICE_FILE = "csv/test_least_cost.csv"
@@ -72,7 +75,8 @@ def main():
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
             start_time = time.time()
             deployment_algorithm = FirstFitAlgorithm()
-            migration_algorithm = ActorCriticv3MigrationAlgorithm(migration_agents, num_epi=cnt)
+            migration_algorithm = ActorCriticv3MigrationAlgorithm(migration_agents, num_epi=cnt,
+                                                                  reward_giver=default_reward_giver)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
             episode.run()
 
@@ -87,4 +91,6 @@ def main():
 if __name__ == '__main__':
     # FIXME:
     os.chdir("../..")
+
+    seed_handler(None)
     main()
