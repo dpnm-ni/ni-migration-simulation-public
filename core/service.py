@@ -30,6 +30,8 @@ class Service:
 
         self.num_interruptions_by_fault = 0
         self.num_interruptions_by_migration = 0
+        self.num_migrations_to_cloud = 0
+        self.num_migrations_to_edge = 0
 
         # FIXME: refine the locking mechanism to represent migration performance depending on services
         # Lock should be taken when migration is ongoing and released after migration is done.
@@ -80,6 +82,11 @@ class Service:
         elapsed_time = self.env.now - self.started_timestamp
         self.duration = self.duration - elapsed_time if elapsed_time <= self.duration else 0
         self.start_service_instance_after_migration(dest_machine)
+
+        if dest_machine.machine_profile.edgeDC_id == 0:
+            self.num_migrations_to_cloud += 1
+        else:
+            self.num_migrations_to_edge += 1
 
     def do_work(self):
         try:

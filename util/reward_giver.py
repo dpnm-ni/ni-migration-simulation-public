@@ -26,7 +26,7 @@ def default_reward_giver(latency_before, latency_after, availability_before, ava
 
     # FIXME: Apply a weight to each reward (sum to 1?).
     Wl = 1
-    Wa = 1
+    Wa = 0
 
     reward = Wl * L_benefit + Wa * A_benefit
 

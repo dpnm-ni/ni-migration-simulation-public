@@ -1,14 +1,13 @@
 import time
 import numpy as np
 from base_logger import log
-
-# FIXME: ensure same as NUM_EPISODES in the target main.py.
-NUM_EPISODES_ITR = 1
+from util.config import NUM_EPISODES_ITR
 
 # System performance.
 sim_times_itr = [] * NUM_EPISODES_ITR
 makespans_itr = [] * NUM_EPISODES_ITR
 avg_resource_utils_itr = [] * NUM_EPISODES_ITR
+num_migrations_itr = [] * NUM_EPISODES_ITR
 service_interruptions_itr = [] * NUM_EPISODES_ITR
 avg_num_migrations_itr = [] * NUM_EPISODES_ITR
 accum_path_costs_itr = [] * NUM_EPISODES_ITR
@@ -20,34 +19,6 @@ agents_accum_rewards_itr = [] * NUM_EPISODES_ITR
 agents_avg_rewards_itr = [] * NUM_EPISODES_ITR
 total_accum_rewards_itr = [] * NUM_EPISODES_ITR
 total_avg_rewards_itr = [] * NUM_EPISODES_ITR
-
-
-# compute average time for a service from its submission to completion
-def average_completion_time(episode):
-    completion_time = 0
-    services = episode.simulation.mec_net.services
-    for service in services:
-        completion_time += (service.finished_timestamp - service.submit_time)
-    return completion_time / len(services)
-
-
-# compute average ratio for a service's residence time
-# effective as the ratio gets closer to 1
-def average_residence_cost(episode):
-    residence_ratio = 0
-    services = episode.simulation.mec_net.services
-    for service in services:
-        residence_ratio += (service.finished_timestamp - service.submit_time) / service.duration
-    return residence_ratio / len(services)
-
-
-# compute average queuing delay
-def average_queuing_delay(episode):
-    queuing_delay = 0
-    services = episode.simulation.mec_net.services
-    for service in services:
-        queuing_delay += (service.started_timestamp - service.queued_timestamp)
-    return queuing_delay / len(services)
 
 
 def print_result(episode, start_time):
@@ -76,6 +47,7 @@ def save_result(episode, start_time):
     makespans_itr.append(episode.env.now)
     # Take cpu util only.
     avg_resource_utils_itr.append([edge_util[0] for edge_util in average_resource_utilization(episode)])
+    num_migrations_itr.append(num_migrations(episode))
     service_interruptions_itr.append(service_interruptions(episode))
     avg_num_migrations_itr.append(average_num_migrations(episode))
     accum_path_costs_itr.append(episode.simulation.monitor.accum_path_cost)
@@ -111,6 +83,7 @@ def write_result():
         print(str(np.mean(sim_times_itr)) + ", " +
               str(np.mean(makespans_itr)) + ", " +
               str(np.mean(avg_resource_utils_itr, axis=0)) + ", " +
+              str(np.mean(num_migrations_itr, axis=0)) + ", " +
               str(np.mean(service_interruptions_itr)) + ", " +
               str(np.mean(avg_num_migrations_itr, axis=0)) + ", " +
               str(np.mean(accum_path_costs_itr)) + ", " +
@@ -124,6 +97,7 @@ def write_result():
     sim_times_itr.clear()
     makespans_itr.clear()
     avg_resource_utils_itr.clear()
+    num_migrations_itr.clear()
     service_interruptions_itr.clear()
     avg_num_migrations_itr.clear()
     accum_path_costs_itr.clear()
@@ -172,6 +146,13 @@ def average_resource_utilization(episode):
     result.append([np.mean(edgeDCs_cpu_util[1:]), np.mean(edgeDCs_memory_util[1:]), np.mean(edgeDCs_disk_util[1:])])
     return result
 
+
+def num_migrations(episode):
+    cloud_or_edge = [0] * 2
+    for service in episode.simulation.mec_net.services:
+        cloud_or_edge[0] += service.num_migrations_to_cloud
+        cloud_or_edge[1] += service.num_migrations_to_edge
+    return cloud_or_edge
 
 def service_interruptions(episode):
     total = 0

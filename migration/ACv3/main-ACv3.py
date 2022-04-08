@@ -7,7 +7,7 @@ from migration.ACv3.agent import ActorCriticv3MigrationAgent
 from migration.ACv3.algorithm import ActorCriticv3MigrationAlgorithm
 from util.csv_reader import CSVReader
 from util.tools import print_result, save_result, write_result
-from util.config import NUM_EDGE_DC, seed_handler
+from util.config import NUM_EDGE_DC, seed_handler, NUM_EPISODES_ITR
 from util.reward_giver import default_reward_giver
 
 
@@ -26,7 +26,7 @@ SERVICE_FILE_LENGTH = 1000
 
 # RL config
 NUM_ITERATIONS = 3000
-NUM_EPISODES = 1
+# NUM_EPISODES = 1
 # DIM_DEP_NN_INPUT = 9
 DIM_MIG_NN_INPUT = 11
 
@@ -71,7 +71,7 @@ def main():
     cnt = 0
     for itr in range(NUM_ITERATIONS):
         log.debug("\n********** Iteration{} ************".format(itr))
-        for epi in range(NUM_EPISODES):
+        for epi in range(NUM_EPISODES_ITR):
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
             start_time = time.time()
             deployment_algorithm = FirstFitAlgorithm()
