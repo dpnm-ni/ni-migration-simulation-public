@@ -7,7 +7,7 @@ from migration.DQNv2.agent import DQNv2MigrationAgent
 from migration.DQNv2.algorithm import DQNv2MigrationAlgorithm
 from util.csv_reader import CSVReader
 from util.tools import print_result, save_result, write_result
-from util.config import NUM_EDGE_DC, seed_handler
+from util.config import NUM_EDGE_DC, seed_handler, NUM_EPISODES_ITR
 from util.reward_giver import default_reward_giver
 
 # TODO: 실행 파라미터(topo name) 및 config 파일 이용할 것
@@ -25,7 +25,7 @@ SERVICE_FILE_LENGTH = 1000
 
 # RL config
 NUM_ITERATIONS = 3000
-NUM_EPISODES = 1
+# NUM_EPISODES = 1
 # DIM_DEP_NN_INPUT = 9
 DIM_MIG_NN_INPUT = 11
 
@@ -70,10 +70,10 @@ def main():
     cnt = 0
     for itr in range(NUM_ITERATIONS):
         log.debug("\n********** Iteration{} ************".format(itr))
-        for epi in range(NUM_EPISODES):
+        for epi in range(NUM_EPISODES_ITR):
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
             start_time = time.time()
-            deployment_algorithm = FirstFitAlgorithm()
+            deployment_algorithm = LeastCostAlgorithm()
             migration_algorithm = DQNv2MigrationAlgorithm(migration_agents, num_epi=cnt,
                                                           reward_giver=default_reward_giver)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
@@ -82,9 +82,15 @@ def main():
             # Fill the performance measurements at the end of one episode.
             save_result(episode, start_time)
 
-            # Sync the target QNet (DNN) with the main (learning) QNet every episode.
+            # FIXME: minimalRL 참고. 에피소드 당 1회 학습 (대신 내부에서 10회 샘플링)
             for i in range(NUM_EDGE_DC + 1):
-                migration_agents[i].update_target_q_function()
+                migration_agents[i].train()
+
+            if cnt != 0 and cnt % 10 == 0:
+                # Sync the target QNet (DNN) with the main (learning) QNet every 10 episodes.
+                for i in range(NUM_EDGE_DC + 1):
+                    migration_agents[i].update_target_q_function()
+
             cnt += 1
 
         write_result()

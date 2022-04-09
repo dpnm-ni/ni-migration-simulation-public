@@ -12,12 +12,15 @@ LEARNING_RATE = 0.001
 THRESHOLD_GRAD_NORM = 1
 # replay mem capacity: 10000 (Cartpole), 2500 (도영 DQN)
 # FIXME: 1 episode에 대략 몇 개 저장되는지 확인 후 적절한 값 설정
-BUFFER_CAPACITY = 2500
+BUFFER_CAPACITY = 5000
 # FIXME: 1 에피소드에 각 엣지별 평균 50~100개 transition 생성됨. 에피소드 #2부터 학습 시작하도록
 LEAST_SIZE_TO_LEARN = 100
 # mini-batch sampling size: 32 (Cartpole), 16 (도영)
 BATCH_SIZE = 16
 GAMMA = 0.98
+
+# https://doheejin.github.io/pytorch/2021/09/22/pytorch-autograd-detect-anomaly.html
+# torch.autograd.set_detect_anomaly(True)
 
 
 class DQNv2MigrationAgent:
@@ -40,7 +43,7 @@ class DQNv2MigrationAgent:
     def get_action_set(self, state):
         # Linear annealing from 10% to 1% (when num_epi is 100).
         # epsilon = max(0.01, 0.1 - 0.01*(self.num_epi/10))
-        epsilon = max(0.01, 0.1 - 0.01 * (self.num_epi / 100))
+        epsilon = max(0.01, 0.1 - 0.01 * (self.num_epi / 500))
 
         # FIXME: dest id별로 exploration 또는 전체 exploration? 일단 전자
         qval = self.q_net.forward(state)
@@ -58,28 +61,27 @@ class DQNv2MigrationAgent:
         return dest_edge_ids
 
     def memorize(self, state, action, reward, state_next):
-        # TODO: scale reward if needed for performance (e.g, reward/100.0).
         scaled_reward = reward
         self.memory.put((state, action, scaled_reward, state_next))
 
     def train(self):
-        # FIXME: 한 번 호출에 몇 번의 q_net 업데이트 수행? v1: 1번, v2: 10번
-        # for i in range(10):
-        if self.memory.size() > LEAST_SIZE_TO_LEARN:
-            mini_batch = random.sample(self.memory.buffer, BATCH_SIZE)
-            for transition in mini_batch:
-                s, a, r, s_prime = transition
+        # FIXME: minimalRL 참고. 한 번 호출에 몇 번의 q_net 업데이트 수행? v1: 1번, v2: 10번
+        for i in range(10):
+            if self.memory.size() > LEAST_SIZE_TO_LEARN:
+                mini_batch = random.sample(self.memory.buffer, BATCH_SIZE)
+                for transition in mini_batch:
+                    s, a, r, s_prime = transition
 
-                # max a s.t max Q(s, a)
-                q_a = self.q_net(s).gather(1, a.view(-1, 1))
-                max_q_prime = self.target_q_net(s_prime).max(1)[0].unsqueeze(1)
-                target = r + GAMMA * max_q_prime
-                loss = F.smooth_l1_loss(q_a, target)
+                    # max a s.t max Q(s, a)
+                    q_a = self.q_net(s).gather(1, a.view(-1, 1))
+                    max_q_prime = self.target_q_net(s_prime).max(1)[0].unsqueeze(1)
+                    target = r + GAMMA * max_q_prime
+                    loss = F.smooth_l1_loss(q_a, target)
 
-                self.optimizer.zero_grad()
-                loss.backward()
-                # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
-                self.optimizer.step()
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+                    self.optimizer.step()
 
     def update_target_q_function(self):
         self.target_q_net.load_state_dict(self.q_net.state_dict())

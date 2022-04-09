@@ -10,7 +10,6 @@ from util.tools import print_result, save_result, write_result
 from util.config import NUM_EDGE_DC, seed_handler, NUM_EPISODES_ITR
 from util.reward_giver import default_reward_giver
 
-
 # TODO: 실행 파라미터(topo name) 및 config 파일 이용할 것
 # num_machines = 5 if using test_least_cost.csv
 # Edgenet: 1 cloud DC and 15 edge DCs.
@@ -82,6 +81,7 @@ def main():
 
             # Fill the performance measurements at the end of one episode.
             save_result(episode, start_time)
+
             cnt += 1
 
         write_result()

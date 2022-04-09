@@ -8,7 +8,8 @@ from enum import IntFlag
 class MIGRATION_STATUS(IntFlag):
     OK = 0
     ONGOING = 1
-    VIOLATION_SLA_AVAILABILITY = 2
+    VIOLATION_SLA_AVAILABILITY_MIGRATION = 2
+    VIOLATION_SLA_AVAILABILITY_FAILURE = 4
     VIOLATION_SLA_LATENCY = 4
     NO_ACCOMMODABLE_MACHINES = 8
     SAME_SOURCE_DESTINATION = 16
@@ -81,10 +82,11 @@ class DQNv2MigrationAlgorithm(Algorithm):
             sum_latency += mec_net.get_path_cost(service.user_loc, service.machine.id)
         avg_latency_before = sum_latency / len(edge_running_services)
 
-        sum_machine_failure_score = 0
+        sum_availability = 0
         for service in edge_running_services:
-            sum_machine_failure_score += service.machine.compute_failure_score(hist_window_size=5)
-        avg_availability_before = sum_machine_failure_score / len(edge_running_services)
+            # Note: availability = 1 - failure_score(M)
+            sum_availability += (1 - service.machine.compute_failure_score(hist_window_size=5))
+        avg_availability_before = sum_availability / len(edge_running_services)
 
         # Step 1: compute the edge profile.
         edge_profile = self.compute_edge_profile(mec_net, edgeDC_id)
@@ -112,7 +114,7 @@ class DQNv2MigrationAlgorithm(Algorithm):
                 continue
 
             if service.can_allow_availability() is False:
-                service_migration_status[i] = MIGRATION_STATUS.VIOLATION_SLA_AVAILABILITY
+                service_migration_status[i] = MIGRATION_STATUS.VIOLATION_SLA_AVAILABILITY_MIGRATION
                 continue
 
             dest_edge_id = dest_edge_ids[i]
@@ -121,7 +123,7 @@ class DQNv2MigrationAlgorithm(Algorithm):
                 service_migration_status[i] = MIGRATION_STATUS.NO_ACCOMMODABLE_MACHINES
                 continue
 
-            random.shuffle(candidate_dest_machines)
+            # random.shuffle(candidate_dest_machines)
             src_machine = service.machine
             for j in range(len(candidate_dest_machines)):
                 dest_machine = candidate_dest_machines[j]
@@ -147,20 +149,20 @@ class DQNv2MigrationAlgorithm(Algorithm):
         # Step 7: compute an instant reward for the migration action.
         assert len(edge_running_services) == len(service_migration_status) == len(dest_edge_machines)
         sum_latency = 0
-        sum_failure_score = 0
+        sum_availability = 0
         for i in range(len(edge_running_services)):
             service = edge_running_services[i]
-            if service_migration_status[i] == MIGRATION_STATUS.OK or MIGRATION_STATUS.ONGOING or \
-                    MIGRATION_STATUS.NO_ACCOMMODABLE_MACHINES or MIGRATION_STATUS.SAME_SOURCE_DESTINATION:
-                # TODO: ensure MIGRATION_STATUS.OK의 경우 이 시점에 service.machine.id == dest_machine.id?
+            if service_migration_status[i] == MIGRATION_STATUS.OK or \
+                    service_migration_status[i] == MIGRATION_STATUS.ONGOING or \
+                    service_migration_status[i] == MIGRATION_STATUS.NO_ACCOMMODABLE_MACHINES or\
+                    service_migration_status[i] == MIGRATION_STATUS.SAME_SOURCE_DESTINATION or \
+                    service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_AVAILABILITY_MIGRATION:
                 latency = mec_net.get_path_cost(service.user_loc, service.machine.id)
                 failure_score = dest_edge_machines[i].compute_failure_score(hist_window_size=5)
-            elif service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_AVAILABILITY:
-                # FIXME:
+            elif service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_AVAILABILITY_FAILURE:
                 latency = mec_net.get_path_cost(service.user_loc, service.machine.id)
                 # FIXME: 고장 가능성 높은 서버 피하는 행위 유도
                 failure_score = 1
-                # failure_score = dest_edge_machines[i].compute_failure_score(hist_window_size=5)
             elif service_migration_status[i] == MIGRATION_STATUS.VIOLATION_SLA_LATENCY:
                 # FIXME:
                 latency = 100
@@ -171,10 +173,10 @@ class DQNv2MigrationAlgorithm(Algorithm):
                 failure_score = None
 
             sum_latency += latency
-            sum_failure_score += failure_score
+            sum_availability += (1 - failure_score)
 
         avg_latency_after = sum_latency / len(edge_running_services)
-        avg_availability_after = sum_failure_score / len(edge_running_services)
+        avg_availability_after = sum_availability / len(edge_running_services)
 
         reward = self.reward_giver(avg_latency_before, avg_latency_after,
                                    avg_availability_before, avg_availability_after)

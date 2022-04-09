@@ -1,7 +1,7 @@
 from base_logger import log
 
 # 1/3/5/10/... 각 경우에 성능 평가할 것
-MIGRATION_INTERVAL = 30
+MIGRATION_INTERVAL = 10
 
 
 class DQNv2MigrationController:
@@ -25,8 +25,8 @@ class DQNv2MigrationController:
             # print(self.edgeDC_id)
             self.make_migration_decision()
 
-            # TODO: train 실행 시점, 횟수 주의, 위치 변경
-            self.migration_algorithm.agents[self.edgeDC_id].train()
+            # # TODO: train 실행 시점, 횟수 주의, 위치 변경
+            # self.migration_algorithm.agents[self.edgeDC_id].train()
 
             yield self.env.timeout(MIGRATION_INTERVAL)
 

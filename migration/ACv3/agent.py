@@ -8,7 +8,7 @@ from util.config import NUM_EDGE_DC
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0005
 THRESHOLD_GRAD_NORM = 1
 GAMMA = 0.98
 
@@ -34,7 +34,6 @@ class ActorCriticv3MigrationAgent:
 
     def train(self):
         loss_lst = []
-
         for transition in self.data:
             s, a, r, s_prime = transition
 
@@ -47,19 +46,19 @@ class ActorCriticv3MigrationAgent:
             v_loss_func = F.smooth_l1_loss(self.net.v(s), td_target.detach())
             loss = pi_utilization_func + v_loss_func
 
-            loss_lst.append(loss)
+            loss_lst.append(loss.mean())
 
-            self.net.optimizer.zero_grad()
-            loss.mean().backward()
-            # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
-            self.net.optimizer.step()
+            # FIXME: version 1
+            # self.net.optimizer.zero_grad()
+            # loss.mean().backward()
+            # # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+            # self.net.optimizer.step()
 
-        # self.net.optimizer.zero_grad()
-        # # FIXME: loss_lst에 들어있는 10개 loss의 평균 -> 최종 loss
-        # # RuntimeError: The size of tensor a (6) must match the size of tensor b (7) at non-singleton dimension 0
-        # torch.tensor(np.mean(loss_lst)).mean().backward()
-        # # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
-        # self.net.optimizer.step()
+        self.net.optimizer.zero_grad()
+        # FIXME: version2. loss_lst에 들어있는 n개 loss.mean의 평균 -> 최종 loss
+        torch.stack(loss_lst).mean().backward()
+        # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+        self.net.optimizer.step()
 
         self.data = []
 
@@ -81,7 +80,6 @@ class Net(nn.Module):
         super(Net, self).__init__()
 
         # Common
-        # TODO: removing/adding one layer for performance?
         self.input = nn.Linear(dim_mig_nn_input, NUM_NEURONS)
         self.hidden1 = nn.Linear(NUM_NEURONS, NUM_NEURONS)
         self.hidden2 = nn.Linear(NUM_NEURONS, NUM_NEURONS)

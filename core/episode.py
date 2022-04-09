@@ -13,6 +13,7 @@ from migration.ACv3.algorithm import ActorCriticv3MigrationAlgorithm
 from migration.ACv3.mig_controller import ActorCriticv3MigrationController
 from migration.DQNv2.algorithm import DQNv2MigrationAlgorithm
 from migration.DQNv2.mig_controller import DQNv2MigrationController
+from util.config import NUM_EDGE_DC
 
 
 class Episode:
@@ -33,15 +34,13 @@ class Episode:
 
         if isinstance(migration_algorithm, DQNv2MigrationAlgorithm):
             mig_controller = []
-            # FIXME:
-            for i in range(16):
+            for i in range(NUM_EDGE_DC + 1):
                 mig_controller.append(DQNv2MigrationController(self.env, migration_algorithm))
         elif isinstance(migration_algorithm, ActorCriticv2MigrationAlgorithm):
             mig_controller = ActorCriticv2MigrationController(self.env, migration_algorithm)
         elif isinstance(migration_algorithm, ActorCriticv3MigrationAlgorithm):
             mig_controller = []
-            # FIXME:
-            for i in range(16):
+            for i in range(NUM_EDGE_DC + 1):
                 mig_controller.append(ActorCriticv3MigrationController(self.env, migration_algorithm))
         else:
             mig_controller = None

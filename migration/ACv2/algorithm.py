@@ -65,8 +65,8 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
         # Step 7: compute an instant reward for the migration action.
         latency_before = mec_net.get_path_cost(source_id=service.user_loc, dest_id=src_machine.id)
         latency_after = mec_net.get_path_cost(source_id=service.user_loc, dest_id=dest_machine.id)
-        availability_before = src_machine.compute_failure_score(hist_window_size=5)
-        availability_after = dest_machine.compute_failure_score(hist_window_size=5)
+        availability_before = 1 - src_machine.compute_failure_score(hist_window_size=5)
+        availability_after = 1 - dest_machine.compute_failure_score(hist_window_size=5)
 
         reward = self.reward_giver(latency_before, latency_after,
                                    availability_before, availability_after)
