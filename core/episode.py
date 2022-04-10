@@ -1,4 +1,5 @@
 import simpy
+from core.central_mig_controller import CentralMigrationController
 from core.edge_dc import EdgeDC
 from core.machine import Machine
 from core.mec_net import MECNetwork
@@ -32,16 +33,22 @@ class Episode:
         monitor = SLAMonitor(self.env)
         injector = FaultInjector(self.env)
 
+        # Migration controller setup (single-agent vs. multi-agent).
         if isinstance(migration_algorithm, DQNv2MigrationAlgorithm):
-            mig_controller = []
+            edge_mig_controllers = []
             for i in range(NUM_EDGE_DC + 1):
-                mig_controller.append(DQNv2MigrationController(self.env, migration_algorithm))
+                edge_mig_controllers.append(DQNv2MigrationController(self.env, migration_algorithm))
+            mig_controller = CentralMigrationController(self.env, edge_mig_controllers)
+
         elif isinstance(migration_algorithm, ActorCriticv2MigrationAlgorithm):
             mig_controller = ActorCriticv2MigrationController(self.env, migration_algorithm)
+
         elif isinstance(migration_algorithm, ActorCriticv3MigrationAlgorithm):
-            mig_controller = []
+            edge_mig_controllers = []
             for i in range(NUM_EDGE_DC + 1):
-                mig_controller.append(ActorCriticv3MigrationController(self.env, migration_algorithm))
+                edge_mig_controllers.append(ActorCriticv3MigrationController(self.env, migration_algorithm))
+            mig_controller = CentralMigrationController(self.env, edge_mig_controllers)
+
         else:
             mig_controller = None
 

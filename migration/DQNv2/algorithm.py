@@ -110,7 +110,7 @@ class DQNv2MigrationAlgorithm(Algorithm):
             service = edge_running_services[i]
             if service.migrating is True:
                 service_migration_status[i] = MIGRATION_STATUS.ONGOING
-                print("[{}] ongoing".format(edgeDC_id))
+                # print("[{}] ongoing".format(edgeDC_id))
                 continue
 
             if service.can_allow_availability() is False:

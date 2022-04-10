@@ -1,7 +1,8 @@
 import time
 import numpy as np
 from base_logger import log
-from util.config import NUM_EPISODES_ITR
+from core.central_mig_controller import CentralMigrationController
+from util.config import NUM_EPISODES_ITR, NUM_SERVICE_TYPE
 
 # System performance.
 sim_times_itr = [] * NUM_EPISODES_ITR
@@ -56,12 +57,12 @@ def save_result(episode, start_time):
 
     # RL performance.
     # Multi-agents.
-    if isinstance(episode.simulation.controller, list):
+    if isinstance(episode.simulation.controller, CentralMigrationController):
         num_edgeDCs = len(episode.simulation.mec_net.edgeDCs)
         agents_sum_reward = [0] * num_edgeDCs
         agents_avg_reward = [0] * num_edgeDCs
-        assert num_edgeDCs == len(episode.simulation.controller)
-        for i, controller in zip(range(num_edgeDCs), episode.simulation.controller):
+        assert num_edgeDCs == len(episode.simulation.controller.edge_mig_controllers)
+        for i, controller in zip(range(num_edgeDCs), episode.simulation.controller.edge_mig_controllers):
             agents_sum_reward[i] = np.sum(controller.hist_rewards)
             # agents_avg_reward[i] = agents_sum_reward[i] / len(controller.hist_rewards)
             agents_avg_reward[i] = round(np.mean(controller.hist_rewards), 3)
@@ -154,6 +155,7 @@ def num_migrations(episode):
         cloud_or_edge[1] += service.num_migrations_to_edge
     return cloud_or_edge
 
+
 def service_interruptions(episode):
     total = 0
     for service in episode.simulation.mec_net.services:
@@ -162,9 +164,8 @@ def service_interruptions(episode):
 
 
 def average_num_migrations(episode):
-    # FIXME: 4
-    types_num_migrations = [0] * 4
-    types_num_services = [0] * 4
+    types_num_migrations = [0] * NUM_SERVICE_TYPE
+    types_num_services = [0] * NUM_SERVICE_TYPE
     for service in episode.simulation.mec_net.services:
         types_num_migrations[service.get_service_type()] += service.num_interruptions_by_migration
         types_num_services[service.get_service_type()] += 1
@@ -179,10 +180,9 @@ def average_service_latency(episode):
     return result
 
 
-# FIXME:
 def average_service_queuing_delay(episode):
-    sum_types_qdelay = [0] * 4
-    cnt_types = [0] * 4
+    sum_types_qdelay = [0] * NUM_SERVICE_TYPE
+    cnt_types = [0] * NUM_SERVICE_TYPE
     services = episode.simulation.mec_net.services
     for service in services:
         sum_types_qdelay[service.get_service_type()] += (service.started_timestamp - service.queued_timestamp)

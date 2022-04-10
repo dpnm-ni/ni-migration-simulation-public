@@ -8,7 +8,7 @@ from util.config import NUM_EDGE_DC
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.0005
+LEARNING_RATE = 0.0001
 THRESHOLD_GRAD_NORM = 1
 GAMMA = 0.98
 
@@ -33,6 +33,9 @@ class ActorCriticv3MigrationAgent:
         self.data.append(item)
 
     def train(self):
+        if len(self.data) == 0:
+            return
+
         loss_lst = []
         for transition in self.data:
             s, a, r, s_prime = transition

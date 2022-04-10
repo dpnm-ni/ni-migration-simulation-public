@@ -8,15 +8,15 @@ import torch.optim as optim
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0005
 THRESHOLD_GRAD_NORM = 1
 # replay mem capacity: 10000 (Cartpole), 2500 (도영 DQN)
 # FIXME: 1 episode에 대략 몇 개 저장되는지 확인 후 적절한 값 설정
-BUFFER_CAPACITY = 5000
-# FIXME: 1 에피소드에 각 엣지별 평균 50~100개 transition 생성됨. 에피소드 #2부터 학습 시작하도록
-LEAST_SIZE_TO_LEARN = 100
+BUFFER_CAPACITY = 10000
+# FIXME: 1 에피소드에 각 엣지별 평균 50~100개 transition 생성됨. 에피소드 #5부터 학습 시작하도록
+LEAST_SIZE_TO_LEARN = 500
 # mini-batch sampling size: 32 (Cartpole), 16 (도영)
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 GAMMA = 0.98
 
 # https://doheejin.github.io/pytorch/2021/09/22/pytorch-autograd-detect-anomaly.html
@@ -60,9 +60,11 @@ class DQNv2MigrationAgent:
 
         return dest_edge_ids
 
-    def memorize(self, state, action, reward, state_next):
-        scaled_reward = reward
-        self.memory.put((state, action, scaled_reward, state_next))
+    # def put_data(self, state, action, reward, state_next):
+    #     scaled_reward = reward
+    #     self.memory.put((state, action, scaled_reward, state_next))
+    def put_data(self, item):
+        self.memory.put(item)
 
     def train(self):
         # FIXME: minimalRL 참고. 한 번 호출에 몇 번의 q_net 업데이트 수행? v1: 1번, v2: 10번

@@ -25,14 +25,8 @@ class Simulation:
             self.injector.attach(self)
             self.env.process(self.injector.run())
         if self.controller is not None:
-            if isinstance(self.controller, list):
-                for i in range(len(self.controller)):
-                    self.controller[i].edgeDC_id = i
-                    self.controller[i].attach(self)
-                    self.env.process(self.controller[i].run())
-            else:
-                self.controller.attach(self)
-                self.env.process(self.controller.run())
+            self.controller.attach(self)
+            self.env.process(self.controller.run())
 
     def is_finished(self):
         return self.service_broker.destroyed \

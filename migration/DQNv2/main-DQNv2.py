@@ -86,7 +86,7 @@ def main():
             for i in range(NUM_EDGE_DC + 1):
                 migration_agents[i].train()
 
-            if cnt != 0 and cnt % 10 == 0:
+            if cnt != 0 and cnt % 5 == 0:
                 # Sync the target QNet (DNN) with the main (learning) QNet every 10 episodes.
                 for i in range(NUM_EDGE_DC + 1):
                     migration_agents[i].update_target_q_function()

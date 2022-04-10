@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 NUM_EDGE_DC = 15
+NUM_SERVICE_TYPE = 4
 
 NUM_EPISODES_ITR = 1
 
