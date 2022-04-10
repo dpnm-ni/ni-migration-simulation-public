@@ -1,6 +1,8 @@
 import simpy
 from base_logger import log
 
+# Note: migration 횟수를 결정 짓는데 영향을 미치지만 0.1로 설정하더라도 migration 횟수가 10배 늘어나지 않는 이유는
+# mig_interval 값이 dominate하기 때문. 만일 interval을 매우 줄인다면 해당 값도 횟수에 영향을 미칠 것으로 보임
 SERVICE_DOWNTIME_CONSTANT = 1
 
 
@@ -57,8 +59,6 @@ class Service:
         self.machine = machine
         self.machine.run_service_instance(self)
         self.work_event = self.env.process(self.do_work())
-
-
 
     def live_migrate_service_instance(self, src_machine, dest_machine):
         assert self.started is True and self.finished is False

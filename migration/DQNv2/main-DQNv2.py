@@ -73,7 +73,7 @@ def main():
         for epi in range(NUM_EPISODES_ITR):
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
             start_time = time.time()
-            deployment_algorithm = LeastCostAlgorithm()
+            deployment_algorithm = FirstFitAlgorithm()
             migration_algorithm = DQNv2MigrationAlgorithm(migration_agents, num_epi=cnt,
                                                           reward_giver=default_reward_giver)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
