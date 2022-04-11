@@ -17,7 +17,7 @@ BUFFER_CAPACITY = 50000
 # FIXME: 1 에피소드에 각 엣지별 평균 50~100개 transition 생성됨. 에피소드 #5부터 학습 시작하도록
 LEAST_SIZE_TO_LEARN = 2000
 # mini-batch sampling size: 32 (Cartpole), 16 (도영)
-BATCH_SIZE = 16
+BATCH_SIZE = 10
 NUM_ROLLOUT = 15
 GAMMA = 0.98
 
@@ -50,14 +50,15 @@ class DQNv2MigrationAgent:
         # FIXME: dest id별로 exploration 또는 전체 exploration? 일단 전자
         qval = self.q_net.forward(state)
         dest_edge_ids = []
-        for i in range(state.shape[0]):
+        for i in range(qval.shape[0]):
             coin = random.random()
             # Exploration.
             if coin < epsilon:
                 dest_edge_id = random.randint(0, 15)
             # Exploitation.
             else:
-                dest_edge_id = np.argmax(qval[i].detach().numpy())
+                # dest_edge_id = np.argmax(qval[i].detach().numpy())
+                dest_edge_id = qval[i].argmax().item()
             dest_edge_ids.append(dest_edge_id)
 
         return dest_edge_ids

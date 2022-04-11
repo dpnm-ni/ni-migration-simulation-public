@@ -35,7 +35,6 @@ class ActorCriticv2MigrationAgent:
 
     def train(self):
         loss_lst = []
-
         for transition in self.data:
             s, a, r, s_prime, done_mask = transition
 
@@ -48,17 +47,17 @@ class ActorCriticv2MigrationAgent:
             v_loss_func = F.smooth_l1_loss(self.net.v(s), td_target.detach())
             loss = pi_utilization_func + v_loss_func
 
-            loss_lst.append(loss)
+            loss_lst.append(loss.mean())
 
-            self.net.optimizer.zero_grad()
-            loss.mean().backward()
-            # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
-            self.net.optimizer.step()
+            # self.net.optimizer.zero_grad()
+            # loss.mean().backward()
+            # # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+            # self.net.optimizer.step()
 
-        # self.net.optimizer.zero_grad()
-        # torch.tensor(np.mean(loss_lst)).mean().backward()
-        # # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
-        # self.net.optimizer.step()
+        self.net.optimizer.zero_grad()
+        torch.stack(loss_lst).mean().backward()
+        # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+        self.net.optimizer.step()
 
         self.data = []
 
