@@ -57,8 +57,8 @@ class ActorCriticv3MigrationAgent:
             # # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
             # self.net.optimizer.step()
 
-        self.net.optimizer.zero_grad()
         # FIXME: version2. loss_lst에 들어있는 n개 loss.mean의 평균 -> 최종 loss
+        self.net.optimizer.zero_grad()
         torch.stack(loss_lst).mean().backward()
         # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
         self.net.optimizer.step()

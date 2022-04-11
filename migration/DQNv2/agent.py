@@ -1,6 +1,7 @@
 import collections
 import random
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -8,15 +9,16 @@ import torch.optim as optim
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
 NUM_NEURONS = 32
 # learning_rate: 0.001~2 (DDPG 논문), 0.01 (도영 DQN), 0.0001 (Cartpole)
-LEARNING_RATE = 0.0005
+LEARNING_RATE = 0.0001
 THRESHOLD_GRAD_NORM = 1
 # replay mem capacity: 10000 (Cartpole), 2500 (도영 DQN)
 # FIXME: 1 episode에 대략 몇 개 저장되는지 확인 후 적절한 값 설정
-BUFFER_CAPACITY = 10000
+BUFFER_CAPACITY = 50000
 # FIXME: 1 에피소드에 각 엣지별 평균 50~100개 transition 생성됨. 에피소드 #5부터 학습 시작하도록
-LEAST_SIZE_TO_LEARN = 500
+LEAST_SIZE_TO_LEARN = 2000
 # mini-batch sampling size: 32 (Cartpole), 16 (도영)
-BATCH_SIZE = 32
+BATCH_SIZE = 16
+NUM_ROLLOUT = 15
 GAMMA = 0.98
 
 # https://doheejin.github.io/pytorch/2021/09/22/pytorch-autograd-detect-anomaly.html
@@ -67,9 +69,11 @@ class DQNv2MigrationAgent:
         self.memory.put(item)
 
     def train(self):
-        # FIXME: minimalRL 참고. 한 번 호출에 몇 번의 q_net 업데이트 수행? v1: 1번, v2: 10번
-        for i in range(10):
-            if self.memory.size() > LEAST_SIZE_TO_LEARN:
+        if self.memory.size() > LEAST_SIZE_TO_LEARN:
+            # FIXME: 아래 mean 연산 때문에 가능한 batch size (divisor) 적게하고 rollout을 키우는 방향으로 수정할 것.
+            #  ACv3에서 에피소드당 total_sim_time/(mig_interval*num_rollout) = 1680/10*10 = 17회 정도 수행하므로 비슷하게.
+            for i in range(NUM_ROLLOUT):
+                loss_lst = []
                 mini_batch = random.sample(self.memory.buffer, BATCH_SIZE)
                 for transition in mini_batch:
                     s, a, r, s_prime = transition
@@ -80,10 +84,20 @@ class DQNv2MigrationAgent:
                     target = r + GAMMA * max_q_prime
                     loss = F.smooth_l1_loss(q_a, target)
 
-                    self.optimizer.zero_grad()
-                    loss.backward()
-                    # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
-                    self.optimizer.step()
+                    loss_lst.append(loss)
+
+                    # FIXME: version 1. batch size * rollout 만큼 backward 발생하여 too slow.
+                    # self.optimizer.zero_grad()
+                    # loss.backward()
+                    # # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+                    # self.optimizer.step()
+
+                # FIXME: version2. loss_lst에 들어있는 n개 loss의 평균/중위값 -> 최종 loss
+                self.optimizer.zero_grad()
+                torch.stack(loss_lst).mean().backward()
+                # torch.stack(loss_lst).median().backward()
+                # torch.nn.utils.clip_grad_norm_(self.net.parameters(), max_norm=THRESHOLD_GRAD_NORM)
+                self.optimizer.step()
 
     def update_target_q_function(self):
         self.target_q_net.load_state_dict(self.q_net.state_dict())

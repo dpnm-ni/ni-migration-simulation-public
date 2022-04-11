@@ -79,9 +79,6 @@ def main():
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
             episode.run()
 
-            # Fill the performance measurements at the end of one episode.
-            save_result(episode, start_time)
-
             # FIXME: minimalRL 참고. 에피소드 당 1회 학습 (대신 내부에서 10회 샘플링)
             for i in range(NUM_EDGE_DC + 1):
                 migration_agents[i].train()
@@ -90,6 +87,9 @@ def main():
                 # Sync the target QNet (DNN) with the main (learning) QNet every 10 episodes.
                 for i in range(NUM_EDGE_DC + 1):
                     migration_agents[i].update_target_q_function()
+
+            # Fill the performance measurements at the end of one episode.
+            save_result(episode, start_time)
 
             cnt += 1
 

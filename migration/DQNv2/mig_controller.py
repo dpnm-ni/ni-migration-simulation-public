@@ -45,5 +45,3 @@ class DQNv2MigrationController:
         #     self.migration_algorithm.agents[self.edgeDC_id].memorize(s, a, r, s_prime)
         #
         #     self.hist_rewards.append(r)
-
-
