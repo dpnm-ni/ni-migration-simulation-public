@@ -28,7 +28,7 @@ class ActorCriticv2MigrationAgent:
         # Note: ensure torch.sum(fitness_scores[i]) == 1
         fitness_scores = self.net.pi(state)
 
-        probs = fitness_scores.transpose(0, 1)
+        probs = fitness_scores.detach().transpose(0, 1)
         dest_machine_index = Categorical(probs=probs).sample().item()
 
         return dest_machine_index, fitness_scores[dest_machine_index]

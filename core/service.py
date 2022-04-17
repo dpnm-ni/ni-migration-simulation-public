@@ -132,14 +132,12 @@ class Service:
         return service_downtime
 
     def can_allow_availability(self):
-        service_downtime = self.compute_service_downtime()
+        expected_downtime = self.compute_service_downtime()
         if self.service_profile.e2e_availability == 0:
             return True
         else:
-            availability = (1 - ((self.accum_service_downtime + service_downtime) / self.duration)) * 100
-            if availability >= self.service_profile.e2e_availability:
-                return True
-            return False
+            availability = (1 - ((self.accum_service_downtime + expected_downtime) / self.duration)) * 100
+            return True if availability >= self.service_profile.e2e_availability else False
 
     def is_started(self):
         return self.started

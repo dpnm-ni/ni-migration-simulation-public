@@ -3,9 +3,10 @@ import numpy as np
 
 def default_reward_giver(latency_before, latency_after, availability_before, availability_after):
     if latency_before != 0:
-        # 감소율이 곧 증가율이므로 곱하기 -1. e.g. (80 - 100) / 100 = -0.2 => 0.2
-        L_benefit = (latency_after - latency_before) / latency_before
-        L_benefit = -1 * L_benefit
+        # 감소율이 곧 benefit 증가율이므로 곱하기 -1. e.g. (80 - 100) / 100 = -0.2 => benefit 0.2
+        # L_benefit = (latency_after - latency_before) / latency_before
+        # L_benefit = -1 * L_benefit
+        L_benefit = (latency_before - latency_after) / latency_before
     else:
         # if latency_after == 0:
         #     # before, after 모두 0 => 엣지 favor
@@ -34,7 +35,7 @@ def default_reward_giver(latency_before, latency_after, availability_before, ava
 
     # FIXME: Apply a weight to each reward (sum to 1?).
     Wl = 1
-    Wa = 0
+    Wa = 0.5
 
     reward = Wl * L_benefit + Wa * A_benefit
 

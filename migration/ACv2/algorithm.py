@@ -14,9 +14,17 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
     def make_batch(self, service, machines):
         batch = []
         for machine in machines:
-            # Note: DQNv2와 동일하게 맞춤
-            feature_vector = [machine.cpu, machine.memory, machine.disk, machine.mon_disk_utilization] \
-                             + [machine.machine_profile.edgeDC_id] \
+            # feature_vector = [machine.cpu, machine.memory, machine.disk, machine.mon_disk_utilization] \
+            #                  + [machine.machine_profile.edgeDC_id] \
+            #                  + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk] \
+            #                  + [service.service_profile.e2e_latency] \
+            #                  + [machine.mec_net.get_path_cost(source_id=service.user_loc, dest_id=machine.id)]
+            """
+            machine/service availability 관련 feature 제거 (DDPG 논문 Fig.2 참조)
+            machine.mon_disk_utilization 포함 유무(위에 것)에 따라 (초기?) 학습 시간 2배 차이남 (sim_time: 1670 -> 1680)
+            특정 edge/service의 provisioning delay 증가에 따른 것으로 추측되는데... 현재 result에는 average 처리해서 확연히 드러나지 않음
+            """
+            feature_vector = [machine.cpu, machine.memory, machine.disk] \
                              + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk] \
                              + [service.service_profile.e2e_latency] \
                              + [machine.mec_net.get_path_cost(source_id=service.user_loc, dest_id=machine.id)]
@@ -24,6 +32,10 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
         return np.array(batch, dtype=np.float32)
 
     def __call__(self, mec_net, service):
+        if service.migrating is True:
+            print("service is migrating now")
+            return None
+
         # Step 1: find available machines that ensure SLA constraints of the given service.
         candidate_machines = []
         for machine in mec_net.machines:
@@ -32,9 +44,8 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
             #         self.can_satisfy_e2e_latency(mec_net, service, machine) and \
             #         machine.can_accommodate(service.service_profile):
             # FIXME: DDPG 논문과의 비교 위해 availability 체크 해제 (해당 논문에서 고려 안함)
-            if service.migrating is False and \
-                    self.can_satisfy_e2e_latency(mec_net, service, machine) and \
-                    machine.can_accommodate(service.service_profile):
+            if self.can_satisfy_e2e_latency(mec_net, service, machine) \
+                    and machine.can_accommodate(service.service_profile):
                 candidate_machines.append(machine)
         # When no machines are available for now.
         if len(candidate_machines) == 0:
@@ -57,6 +68,8 @@ class ActorCriticv2MigrationAlgorithm(Algorithm):
         else:
             log.debug("[{}] Service {} stays in the current M{}@E{}".format(
                 service.env.now, service.id, src_machine, src_machine.machine_profile.edgeDC_id))
+            # # FIXME: 자기자신으로의 migration도 action으로 취급 -> 이 경우 ensure reward == 0
+            # service.live_migrate_service_instance(src_machine, src_machine)
 
         # Step 6: get the next state.
         batch = self.make_batch(service, candidate_machines)

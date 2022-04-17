@@ -27,7 +27,7 @@ SERVICE_FILE_LENGTH = 1000
 NUM_ITERATIONS = 3000
 # NUM_EPISODES = 1
 # DIM_DEP_NN_INPUT = 9
-DIM_MIG_NN_INPUT = 10
+DIM_MIG_NN_INPUT = 8
 
 
 # 시뮬레이터 동작 로그 없이 각 알고리즘의 결과만 출력하려면 base_logger의 로그 레벨 INFO로 바꿀 것
