@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.distributions import Categorical
 from util.config import NUM_EDGE_DC
 
 # num_neurons: 30 (DDPG 논문), 128 (도영 DQN)
@@ -72,7 +73,9 @@ class ActorCriticv3MigrationAgent:
 
         dest_edge_ids = []
         for i in range(state.shape[0]):
-            dest_edge_id = np.argmax(fitness_scores[i].detach().numpy())
+            # dest_edge_id = np.argmax(fitness_scores[i].detach().numpy())
+            probs = fitness_scores[i].detach()
+            dest_edge_id = Categorical(probs=probs).sample().item()
             dest_edge_ids.append(dest_edge_id)
 
         return dest_edge_ids
