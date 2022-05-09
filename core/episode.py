@@ -12,6 +12,8 @@ from migration.ACv2.algorithm import ActorCriticv2MigrationAlgorithm
 from migration.ACv2.mig_controller import ActorCriticv2MigrationController
 from migration.ACv3.algorithm import ActorCriticv3MigrationAlgorithm
 from migration.ACv3.mig_controller import ActorCriticv3MigrationController
+from migration.ACv4.algorithm import ActorCriticv4MigrationAlgorithm
+from migration.ACv4.mig_controller import ActorCriticv4MigrationController
 from migration.DQNv2.algorithm import DQNv2MigrationAlgorithm
 from migration.DQNv2.mig_controller import DQNv2MigrationController
 from util.config import NUM_EDGE_DC
@@ -47,6 +49,12 @@ class Episode:
             edge_mig_controllers = []
             for i in range(NUM_EDGE_DC + 1):
                 edge_mig_controllers.append(ActorCriticv3MigrationController(self.env, migration_algorithm))
+            mig_controller = CentralMigrationController(self.env, edge_mig_controllers)
+
+        elif isinstance(migration_algorithm, ActorCriticv4MigrationAlgorithm):
+            edge_mig_controllers = []
+            for i in range(NUM_EDGE_DC + 1):
+                edge_mig_controllers.append(ActorCriticv4MigrationController(self.env, migration_algorithm))
             mig_controller = CentralMigrationController(self.env, edge_mig_controllers)
 
         else:

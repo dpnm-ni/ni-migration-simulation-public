@@ -1,5 +1,6 @@
 from base_logger import log
 from migration.ACv3.algorithm import ActorCriticv3MigrationAlgorithm
+from migration.ACv4.algorithm import ActorCriticv4MigrationAlgorithm
 
 # 1/3/5/10/... 각 경우에 성능 평가할 것
 MIGRATION_INTERVAL = 10
@@ -27,6 +28,7 @@ class CentralMigrationController:
 
             edge_transitions = []
             for edge_controller in self.edge_mig_controllers:
+                # Call each agent to have an experience (ideally parallel processing).
                 transition = edge_controller.make_migration_decision()
                 edge_transitions.append(transition)
 
@@ -62,6 +64,12 @@ class CentralMigrationController:
 
             # FIXME: central controller 각 알고리즘 별로 따로 둘 것
             if isinstance(self.edge_mig_controllers[0].migration_algorithm, ActorCriticv3MigrationAlgorithm):
+                if self.run_cnt % NUM_ROLLOUT == 0:
+                    for i in range(len(self.edge_mig_controllers)):
+                        edge_controller = self.edge_mig_controllers[i]
+                        edge_controller.migration_algorithm.agents[i].train()
+
+            if isinstance(self.edge_mig_controllers[0].migration_algorithm, ActorCriticv4MigrationAlgorithm):
                 if self.run_cnt % NUM_ROLLOUT == 0:
                     for i in range(len(self.edge_mig_controllers)):
                         edge_controller = self.edge_mig_controllers[i]
