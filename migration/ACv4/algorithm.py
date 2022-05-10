@@ -52,6 +52,19 @@ class ActorCriticv4MigrationAlgorithm(Algorithm):
 
     # As analogy to DQNv2 who creates mapping features between each service to each machine,
     # for each service running in this DC, create its mapping features to each DC.
+    # def make_batch(self, mec_net, service, edgeDC_profiles):
+    #     batch = []
+    #     for i in range(len(edgeDC_profiles)):
+    #         sample_edge_machine, avg_edge_cpu, avg_edge_mem, avg_edge_disk, avg_edge_disk_util = edgeDC_profiles[i]
+    #
+    #         feature_vector = [avg_edge_cpu, avg_edge_mem, avg_edge_disk, avg_edge_disk_util] \
+    #                          + [service.service_profile.cpu, service.service_profile.memory, service.service_profile.disk] \
+    #                          + [service.service_profile.e2e_latency, service.service_profile.e2e_availability] \
+    #                          + [mec_net.get_path_cost(source_id=service.user_loc, dest_id=sample_edge_machine.id)]
+    #         batch.append(feature_vector)
+    #
+    #     return np.array(batch, dtype=np.float32)
+    # Normalization ver.
     def make_batch(self, mec_net, service, edgeDC_profiles):
         batch = []
         for i in range(len(edgeDC_profiles)):
@@ -63,7 +76,21 @@ class ActorCriticv4MigrationAlgorithm(Algorithm):
                              + [mec_net.get_path_cost(source_id=service.user_loc, dest_id=sample_edge_machine.id)]
             batch.append(feature_vector)
 
-        return np.array(batch, dtype=np.float32)
+        batch = np.array(batch, dtype=np.float32)
+        for col, i in zip(batch.T, range(batch.T.shape[0])):
+            if i not in [4, 5, 6, 7, 8]:
+                batch[:, i] = np.array(self.normalize(col, 0, 1))
+
+        return batch
+
+    def normalize(self, arr, t_min, t_max):
+        norm_arr = []
+        diff = t_max - t_min
+        diff_arr = max(arr) - min(arr)
+        for i in arr:
+            temp = (((i - min(arr)) * diff) / (diff_arr + 1e-9)) + t_min
+            norm_arr.append(temp)
+        return norm_arr
 
     def get_accommodable_edge_machines(self, mec_net, service, edgeDC_id):
         edge_machines = mec_net.get_edge_machines(edgeDC_id)

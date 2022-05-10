@@ -91,7 +91,7 @@ def write_result():
               str(np.mean(avg_service_latencies_itr, axis=0)) + ", " +
               str(np.mean(avg_service_prov_delays_itr, axis=0)) + ", " +
               # str(np.mean(agents_accum_rewards_itr)) + ", " +
-              str(np.mean(agents_avg_rewards_itr, axis=0)).replace("\n", " ") + ", " +
+              # str(np.mean(agents_avg_rewards_itr, axis=0)).replace("\n", " ") + ", " +
               str(np.mean(total_accum_rewards_itr)) + ", " +
               str(np.mean(total_avg_rewards_itr)), file=f)
 
