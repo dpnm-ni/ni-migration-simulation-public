@@ -16,6 +16,8 @@ from migration.ACv4.algorithm import ActorCriticv4MigrationAlgorithm
 from migration.ACv4.mig_controller import ActorCriticv4MigrationController
 from migration.DQNv2.algorithm import DQNv2MigrationAlgorithm
 from migration.DQNv2.mig_controller import DQNv2MigrationController
+from migration.DQNv3.algorithm import DQNv3MigrationAlgorithm
+from migration.DQNv3.mig_controller import DQNv3MigrationController
 from util.config import NUM_EDGE_DC
 
 
@@ -42,6 +44,13 @@ class Episode:
                 edge_mig_controllers.append(DQNv2MigrationController(self.env, migration_algorithm))
             mig_controller = CentralMigrationController(self.env, edge_mig_controllers)
 
+        elif isinstance(migration_algorithm, DQNv3MigrationAlgorithm):
+            edge_mig_controllers = []
+            for i in range(NUM_EDGE_DC + 1):
+                edge_mig_controllers.append(DQNv3MigrationController(self.env, migration_algorithm))
+            mig_controller = CentralMigrationController(self.env, edge_mig_controllers)
+
+        # Single-agent ver. for performance comparison.
         elif isinstance(migration_algorithm, ActorCriticv2MigrationAlgorithm):
             mig_controller = ActorCriticv2MigrationController(self.env, migration_algorithm)
 

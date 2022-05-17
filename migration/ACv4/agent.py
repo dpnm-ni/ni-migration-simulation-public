@@ -45,6 +45,7 @@ class ActorCriticv4MigrationAgent:
             delta = td_target - self.net.v(s)
             # Note: ensure torch.sum(pi[i]) == 1
             pi = self.net.pi(s, softmax_dim=1)
+            # pi is 3-dim, so convert a into the same dim as well just to fetch target indices.
             pi_a = pi.gather(1, a.view(-1, 1, 1))
             pi_utilization_func = -torch.log(pi_a) * delta.detach()
             v_loss_func = F.smooth_l1_loss(self.net.v(s), td_target.detach())
@@ -66,9 +67,9 @@ class ActorCriticv4MigrationAgent:
 
         self.data = []
 
-    def get_action_set(self, state):
+    def get_action(self, sub_state):
         # Note: ensure torch.sum(fitness_scores[i]) == 1
-        fitness_scores = self.net.pi(state)
+        fitness_scores = self.net.pi(sub_state)
         probs = fitness_scores.detach().transpose(0, 1)
         dest_edge_id = Categorical(probs=probs).sample().item()
 

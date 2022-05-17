@@ -15,7 +15,7 @@ class MIGRATION_STATUS(IntFlag):
     SAME_SOURCE_DESTINATION = 16
 
 
-class ActorCriticv4MigrationAlgorithm(Algorithm):
+class DQNv3MigrationAlgorithm(Algorithm):
     def __init__(self, agents, num_epi, reward_giver):
         assert isinstance(agents, list)
         self.agents = agents

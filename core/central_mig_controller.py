@@ -1,6 +1,8 @@
 from base_logger import log
 from migration.ACv3.algorithm import ActorCriticv3MigrationAlgorithm
 from migration.ACv4.algorithm import ActorCriticv4MigrationAlgorithm
+from migration.DQNv2.algorithm import DQNv2MigrationAlgorithm
+from migration.DQNv3.algorithm import DQNv3MigrationAlgorithm
 
 # 1/3/5/10/... 각 경우에 성능 평가할 것
 MIGRATION_INTERVAL = 10
@@ -28,11 +30,11 @@ class CentralMigrationController:
 
             edge_transitions = []
             for edge_controller in self.edge_mig_controllers:
-                # Call each agent to have an experience (ideally parallel processing).
+                # Call each agent to run an experience (ideally parallel processing).
                 transition = edge_controller.make_migration_decision()
                 edge_transitions.append(transition)
 
-            # Make sure to proceed.
+            # Make sure to proceed further.
             assert len(self.edge_mig_controllers) == len(edge_transitions)
 
             # Adjust each edge controller's reward in terms of the whole system's reward at this mig tick.
@@ -62,7 +64,12 @@ class CentralMigrationController:
                     edge_controller.migration_algorithm.agents[i].put_data((s, a, avg_reward, s_prime))
                     edge_controller.hist_rewards.append(avg_reward)
 
-            # FIXME: central controller 각 알고리즘 별로 따로 둘 것
+            # FIXME: central controller 각 알고리즘 별로 따로 둘 것. DQN 계열 학습은 main 함수에서 episode 단위로 호출
+            if isinstance(self.edge_mig_controllers[0].migration_algorithm, DQNv2MigrationAlgorithm):
+                pass
+            if isinstance(self.edge_mig_controllers[0].migration_algorithm, DQNv3MigrationAlgorithm):
+                pass
+
             if isinstance(self.edge_mig_controllers[0].migration_algorithm, ActorCriticv3MigrationAlgorithm):
                 if self.run_cnt % NUM_ROLLOUT == 0:
                     for i in range(len(self.edge_mig_controllers)):

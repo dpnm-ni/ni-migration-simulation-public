@@ -1,6 +1,3 @@
-from migration.ACv3.mig_controller import ActorCriticv3MigrationController
-
-
 class Simulation:
     def __init__(self, env, mec_net, service_broker, scheduler, monitor, injector, controller):
         self.env = env

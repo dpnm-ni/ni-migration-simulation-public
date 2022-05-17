@@ -1,5 +1,5 @@
 # FIXME: 별다른 기능 없어짐. agent와 통합할 것
-class ActorCriticv4MigrationController:
+class DQNv3MigrationController:
     def __init__(self, env, migration_algorithm):
         self.env = env
         self.simulation = None

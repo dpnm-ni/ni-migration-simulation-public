@@ -3,8 +3,8 @@ import time
 from base_logger import log
 from core.algorithm import RandomAlgorithm, FirstFitAlgorithm, LeastCostAlgorithm
 from core.episode import Episode
-from migration.DQNv2.agent import DQNv2MigrationAgent
-from migration.DQNv2.algorithm import DQNv2MigrationAlgorithm
+from migration.DQNv3.agent import DQNv3MigrationAgent
+from migration.DQNv3.algorithm import DQNv3MigrationAlgorithm
 from util.csv_reader import CSVReader
 from util.tools import print_result, save_result, write_result
 from util.config import NUM_EDGE_DC, seed_handler, NUM_EPISODES_ITR
@@ -24,10 +24,10 @@ SERVICE_FILE_OFFSET = 0
 SERVICE_FILE_LENGTH = 1000
 
 # RL config
-NUM_ITERATIONS = 6000
+NUM_ITERATIONS = 3000
 # NUM_EPISODES = 1
 # DIM_DEP_NN_INPUT = 9
-DIM_MIG_NN_INPUT = 11
+DIM_MIG_NN_INPUT = 10
 
 
 # 시뮬레이터 동작 로그 없이 각 알고리즘의 결과만 출력하려면 base_logger의 로그 레벨 INFO로 바꿀 것
@@ -65,7 +65,7 @@ def main():
     # Multi-agents ver: each agent controls a policy for the corresponding edge DC.
     migration_agents = []
     for i in range(NUM_EDGE_DC + 1):
-        migration_agents.append(DQNv2MigrationAgent(i, DIM_MIG_NN_INPUT))
+        migration_agents.append(DQNv3MigrationAgent(i, DIM_MIG_NN_INPUT))
 
     cnt = 0
     for itr in range(NUM_ITERATIONS):
@@ -74,7 +74,7 @@ def main():
             log.debug("\n********** Iteration{} - Episode{} ************".format(itr, epi))
             start_time = time.time()
             deployment_algorithm = FirstFitAlgorithm()
-            migration_algorithm = DQNv2MigrationAlgorithm(migration_agents, num_epi=cnt,
+            migration_algorithm = DQNv3MigrationAlgorithm(migration_agents, num_epi=cnt,
                                                           reward_giver=default_reward_giver)
             episode = Episode(None, service_profiles, deployment_algorithm, migration_algorithm)
             episode.run()
